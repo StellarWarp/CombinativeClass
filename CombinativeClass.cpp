@@ -128,6 +128,22 @@ private:
 		using type = typename remove_helper<type_list<T1s..., T2>, type_list<T2s...>, Remove - 1>::type;
 	};
 
+
+
+	template <typename Unsolve, typename Solved, typename BlackList> struct t_remove_helper;
+	template <typename BlackList, typename... Solved>
+	struct t_remove_helper<type_list<>, type_list<Solved...>, BlackList>
+	{
+		using type = type_list<Solved...>;
+	};
+	template <typename... Remove, typename U, typename... Unsolve, typename... Solved> 
+	struct t_remove_helper<type_list<U, Unsolve...>, type_list<Solved...>, type_list<Remove...>> {
+		static constexpr bool filtered = type_list<Remove...>::template contains<U>;
+		using new_solve_list = std::conditional_t<filtered,	type_list<Solved...>, type_list<Solved..., U>>;
+		using type = t_remove_helper<type_list<Unsolve...>, new_solve_list, type_list<Remove...>>::type;
+	};
+
+
 public:
 	template <typename... List>
 	using cat = typename cat_helper<type_list<T...>, List...>::type;
@@ -142,6 +158,8 @@ public:
 
 	template <size_t I>
 	using remove = typename remove_helper<type_list<>, type_list<T...>, I>::type;
+	template <typename... U>
+	using erase = typename t_remove_helper<type_list<T...>, type_list<>, type_list<U...>>::type;
 
 
 private:
@@ -276,10 +294,20 @@ struct valid_method<T, type_list<Valid...>, type_list<>>
 	using method_list = type_list<Valid...>;
 };
 
+template <typename T, typename Method>
+struct match_condition{static constexpr bool value = false;};
+template <typename T, typename Method> requires (Method::template ImplForCond<T>) && (Method::template RemoveForCond<T>)
+struct match_condition<T, Method>{static constexpr bool value = true;};
+template <typename T, typename Method> requires (Method::template ImplForCond<T>) && (!requires { Method::template RemoveForCond<T>; })
+struct match_condition<T, Method> { static constexpr bool value = true; };
+template <typename T, typename Method> requires (Method::template RemoveForCond<T>) && (!requires { Method::template ImplForCond<T>; })
+struct match_condition<T, Method> { static constexpr bool value = true; };
+
+
 template <typename T, typename... Valid, typename Method, typename... Methods>
 struct valid_method<T, type_list<Valid...>, type_list<Method, Methods...>>
 {
-	constexpr static bool is_valid = Method::template __cond__<T>;
+	constexpr static bool is_valid = match_condition<T, Method>::value;
 	using new_list = std::conditional_t<is_valid, type_list<Valid..., Method>, type_list<Valid...>>;
 	using method_list = typename valid_method<T, new_list, type_list<Methods...>>::method_list;
 };
@@ -313,11 +341,13 @@ struct UnwarpMethods
 {
 	using method_list = typename UnwarpMethodsImpl<type_list<FunctionSet...>, type_list<>>::method_list;
 };
+
+template<typename Methods>
+struct FunctionSetCatImpl;
+template<typename... Method>
+struct FunctionSetCatImpl<type_list<Method...>> : function_set<Method...>{};
 template<typename... FunctionSet>
-struct FunctionSetCat : MultiInherit<typename UnwarpMethods<FunctionSet...>::method_list>
-{
-	using method_list = typename UnwarpMethods<FunctionSet...>::method_list;
-};
+struct FunctionSetCat : FunctionSetCatImpl<typename UnwarpMethods<FunctionSet...>::method_list>{};
 
 template <typename FunctionSets, typename Fragments>
 struct InheritImpl;
@@ -380,25 +410,48 @@ struct inherit_infos
 	using fragments = info::template get<1>;
 };
 
-
-
 template <typename... T>
 struct combine : InheritImpl<
 	typename inherit_infos<T...>::function_sets,
-	typename inherit_infos<T...>::fragments> {};
+	typename inherit_infos<T...>::fragments> {
+	
+	template<typename... U>
+	using remove = InheritImpl<
+		typename inherit_infos<T...>::function_sets,
+		typename inherit_infos<T...>::fragments::template erase<U...>>;
+};
+
+
+template<typename... T>
+struct exclude;
 
 template<typename... T>
 struct impl_for
 {
-	template <typename Self> static constexpr bool __cond__ = (std::derived_from<Self, T>, ...);
+	template<typename Self, typename T> 
+	static constexpr bool transform = std::derived_from<Self, T>;
+	template<typename Self, typename... T>
+	static constexpr bool transform<Self, exclude<T...>> = (!std::derived_from<Self, T> && ...);
+
+	template <typename Self> static constexpr bool ImplForCond = (transform<Self, T> && ...);
+	template <typename T, typename ValidList, typename Unverified>
+	friend struct valid_method;
 };
+//template<typename... T>
+//struct remove_for //this requires a MSV_EBO for derived
+//{
+//	template <typename Self> static constexpr bool RemoveForCond = !(std::derived_from<Self, T> || ...);
+//	template <typename T, typename ValidList, typename Unverified>
+//	friend struct valid_method;
+//};
 
 
 struct FragmentA { int32_t a{}; };
 struct FragmentB { int32_t b{}; };
 struct FragmentC { int32_t c{}; };
+struct FragmentD { int32_t d{}; };
 
-struct Method1 : impl_for<FragmentA, FragmentB> {
+struct Method1 : impl_for<FragmentA, FragmentB, exclude<FragmentC>>{
 	auto func_ab(this auto&& self) { return self.a + self.b; }
 };
 struct Method2 : impl_for<FragmentA, FragmentC> {
@@ -407,6 +460,9 @@ struct Method2 : impl_for<FragmentA, FragmentC> {
 struct Method3 : impl_for<FragmentB, FragmentC> {
 	auto func_bc(this auto&& self) { return self.b + self.c; }
 };
+struct Method4 : impl_for<FragmentC,exclude<FragmentA,FragmentB>> {
+	auto func_c(this auto&& self) { return self.c; }
+};
 struct InitABC : impl_for<FragmentA, FragmentB, FragmentC> {
 	auto initializer(this auto&& self, int32_t a, int32_t b, int32_t c) {
 		self.a = a;
@@ -414,7 +470,7 @@ struct InitABC : impl_for<FragmentA, FragmentB, FragmentC> {
 		self.c = c;
 	}
 };
-struct FuncSet1 : function_set<InitABC, Method1, Method2, Method3> {};
+struct FuncSet1 : function_set<InitABC, Method1, Method2, Method3, Method4> {};
 
 struct Object1 : combine<FuncSet1, FragmentA, FragmentB> {};
 static_assert(sizeof(Object1) == 2 * sizeof(int32_t));
@@ -425,19 +481,21 @@ static_assert(sizeof(Object2) == 2 * sizeof(int32_t));
 struct Object3 : combine<Object1, Object2> {};
 static_assert(sizeof(Object3) == 3 * sizeof(int32_t));
 
+struct Object4 : combine<Object3, FragmentD>::remove<FragmentA, FragmentB> {};
+static_assert(sizeof(Object4) == 2 * sizeof(int32_t));
 
 int main() {
+
 	Object1 o1;
 	o1.func_ab();
-
 	Object2 o2;
 	o2.func_ac();
-
 	Object3 o3;
 	o3.initializer(1, 2, 3);
-	o3.func_ab();
 	o3.func_ac();
 	o3.func_bc();
+	Object4 o4;
+	o4.func_c();
 }
 
 
