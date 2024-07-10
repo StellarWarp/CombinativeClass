@@ -136,10 +136,10 @@ private:
 	{
 		using type = type_list<Solved...>;
 	};
-	template <typename... Remove, typename U, typename... Unsolve, typename... Solved> 
+	template <typename... Remove, typename U, typename... Unsolve, typename... Solved>
 	struct t_remove_helper<type_list<U, Unsolve...>, type_list<Solved...>, type_list<Remove...>> {
 		static constexpr bool filtered = type_list<Remove...>::template contains<U>;
-		using new_solve_list = std::conditional_t<filtered,	type_list<Solved...>, type_list<Solved..., U>>;
+		using new_solve_list = std::conditional_t<filtered, type_list<Solved...>, type_list<Solved..., U>>;
 		using type = t_remove_helper<type_list<Unsolve...>, new_solve_list, type_list<Remove...>>::type;
 	};
 
@@ -295,9 +295,9 @@ struct valid_method<T, type_list<Valid...>, type_list<>>
 };
 
 template <typename T, typename Method>
-struct match_condition{static constexpr bool value = false;};
+struct match_condition { static constexpr bool value = false; };
 template <typename T, typename Method> requires (Method::template ImplForCond<T>) && (Method::template RemoveForCond<T>)
-struct match_condition<T, Method>{static constexpr bool value = true;};
+struct match_condition<T, Method> { static constexpr bool value = true; };
 template <typename T, typename Method> requires (Method::template ImplForCond<T>) && (!requires { Method::template RemoveForCond<T>; })
 struct match_condition<T, Method> { static constexpr bool value = true; };
 template <typename T, typename Method> requires (Method::template RemoveForCond<T>) && (!requires { Method::template ImplForCond<T>; })
@@ -345,9 +345,9 @@ struct UnwarpMethods
 template<typename Methods>
 struct FunctionSetCatImpl;
 template<typename... Method>
-struct FunctionSetCatImpl<type_list<Method...>> : function_set<Method...>{};
+struct FunctionSetCatImpl<type_list<Method...>> : function_set<Method...> {};
 template<typename... FunctionSet>
-struct FunctionSetCat : FunctionSetCatImpl<typename UnwarpMethods<FunctionSet...>::method_list>{};
+struct FunctionSetCat : FunctionSetCatImpl<typename UnwarpMethods<FunctionSet...>::method_list> {};
 
 template <typename FunctionSets, typename Fragments>
 struct InheritImpl;
@@ -414,7 +414,7 @@ template <typename... T>
 struct combine : InheritImpl<
 	typename inherit_infos<T...>::function_sets,
 	typename inherit_infos<T...>::fragments> {
-	
+
 	template<typename... U>
 	using remove = InheritImpl<
 		typename inherit_infos<T...>::function_sets,
@@ -428,7 +428,7 @@ struct exclude;
 template<typename... T>
 struct impl_for
 {
-	template<typename Self, typename T> 
+	template<typename Self, typename T>
 	static constexpr bool transform = std::derived_from<Self, T>;
 	template<typename Self, typename... T>
 	static constexpr bool transform<Self, exclude<T...>> = (!std::derived_from<Self, T> && ...);
@@ -451,26 +451,27 @@ struct FragmentB { int32_t b{}; };
 struct FragmentC { int32_t c{}; };
 struct FragmentD { int32_t d{}; };
 
-struct Method1 : impl_for<FragmentA, FragmentB, exclude<FragmentC>>{
+struct Methods1 : impl_for<FragmentA, FragmentB, exclude<FragmentC>> {
 	auto func_ab(this auto&& self) { return self.a + self.b; }
+	auto func_ab_1(this auto&& self) { return self.a - self.b; }
 };
-struct Method2 : impl_for<FragmentA, FragmentC> {
+struct Methods2 : impl_for<FragmentA, FragmentC> {
 	auto func_ac(this auto&& self) { return self.a + self.c; }
 };
-struct Method3 : impl_for<FragmentB, FragmentC> {
+struct Methods3 : impl_for<FragmentB, FragmentC> {
 	auto func_bc(this auto&& self) { return self.b + self.c; }
 };
-struct Method4 : impl_for<FragmentC,exclude<FragmentA,FragmentB>> {
+struct Methods4 : impl_for<FragmentC, exclude<FragmentA, FragmentB>> {
 	auto func_c(this auto&& self) { return self.c; }
 };
-struct InitABC : impl_for<FragmentA, FragmentB, FragmentC> {
+struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC> {
 	auto initializer(this auto&& self, int32_t a, int32_t b, int32_t c) {
 		self.a = a;
 		self.b = b;
 		self.c = c;
 	}
 };
-struct FuncSet1 : function_set<InitABC, Method1, Method2, Method3, Method4> {};
+struct FuncSet1 : function_set <Methods1, Methods2, Methods3, Methods4, Methods5> {};
 
 struct Object1 : combine<FuncSet1, FragmentA, FragmentB> {};
 static_assert(sizeof(Object1) == 2 * sizeof(int32_t));
@@ -488,12 +489,16 @@ int main() {
 
 	Object1 o1;
 	o1.func_ab();
+	o1.func_ab_1();
+
 	Object2 o2;
 	o2.func_ac();
+
 	Object3 o3;
 	o3.initializer(1, 2, 3);
 	o3.func_ac();
 	o3.func_bc();
+
 	Object4 o4;
 	o4.func_c();
 }
