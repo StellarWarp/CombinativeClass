@@ -394,37 +394,36 @@ struct impl_for
 };
 
 
-struct ComponentA { int32_t a; };
-struct ComponentB { int32_t b; };
-struct ComponentC { int32_t c; };
-struct ComponentD { int32_t d; };
+struct FragmentA { int32_t a{}; };
+struct FragmentB { int32_t b{}; };
+struct FragmentC { int32_t c{}; };
 
-struct Method1 : impl_for<ComponentA, ComponentB> {
+struct Method1 : impl_for<FragmentA, FragmentB> {
 	auto func_ab(this auto&& self) { return self.a + self.b; }
 };
-struct Method2 : impl_for<ComponentA, ComponentC> {
+struct Method2 : impl_for<FragmentA, FragmentC> {
 	auto func_ac(this auto&& self) { return self.a + self.c; }
 };
-struct Method3 : impl_for<ComponentB, ComponentC> {
+struct Method3 : impl_for<FragmentB, FragmentC> {
 	auto func_bc(this auto&& self) { return self.b + self.c; }
 };
-struct InitABC : impl_for<ComponentA, ComponentB, ComponentC> {
+struct InitABC : impl_for<FragmentA, FragmentB, FragmentC> {
 	auto initializer(this auto&& self, int32_t a, int32_t b, int32_t c) {
 		self.a = a;
 		self.b = b;
 		self.c = c;
 	}
 };
-struct DemoFuncSet : function_set<InitABC, Method1, Method2, Method3> {};
+struct FuncSet1 : function_set<InitABC, Method1, Method2, Method3> {};
 
-struct Object1 : combine<DemoFuncSet, ComponentA, ComponentB> {};
-static_assert(sizeof(Object1) == sizeof(ComponentA) + sizeof(ComponentB));
+struct Object1 : combine<FuncSet1, FragmentA, FragmentB> {};
+static_assert(sizeof(Object1) == 2 * sizeof(int32_t));
 
-struct Object2 : combine<DemoFuncSet, ComponentA, ComponentC> {};
-static_assert(sizeof(Object2) == sizeof(ComponentA) + sizeof(ComponentC));
+struct Object2 : combine<FuncSet1, FragmentA, FragmentC> {};
+static_assert(sizeof(Object2) == 2 * sizeof(int32_t));
 
 struct Object3 : combine<Object1, Object2> {};
-static_assert(sizeof(Object3) == sizeof(ComponentA) + sizeof(ComponentB) + sizeof(ComponentC));
+static_assert(sizeof(Object3) == 3 * sizeof(int32_t));
 
 
 int main() {
@@ -439,7 +438,6 @@ int main() {
 	o3.func_ab();
 	o3.func_ac();
 	o3.func_bc();
-
 }
 
 
