@@ -1,5 +1,4 @@
 ﻿
-#include <iostream>
 #include "combinative.h"
 
 using namespace combinative;
