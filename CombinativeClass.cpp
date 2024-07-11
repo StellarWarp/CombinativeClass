@@ -1,9 +1,6 @@
-﻿// Coroutine.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
-//
-
-
-#include <iostream>
-
+﻿#include <type_traits>
+#include <concepts>
+#include <tuple>
 
 template <typename... T> struct type_list {
 	static constexpr size_t size = sizeof...(T);
@@ -237,21 +234,21 @@ public:
 	using unique = typename unique_helper<T...>::type;
 
 private:
-	template <typename Target, size_t I, typename...> struct index_of_helper;
-	template <typename Target, size_t I> struct index_of_helper<Target, I> {
-		using type = std::integral_constant<size_t, -1>;
+	template <typename Target, int I, typename...> struct index_of_helper;
+	template <typename Target, int I> struct index_of_helper<Target, I> {
+		using type = std::integral_constant<int, -1>;
 	};
-	template <typename Target, size_t I, typename U, typename... Us>
+	template <typename Target, int I, typename U, typename... Us>
 	struct index_of_helper<Target, I, U, Us...> {
 		using type = std::conditional_t<
 			std::is_same_v<Target, U>,
-			std::integral_constant<size_t, I>,
+			std::integral_constant<int, I>,
 			typename index_of_helper<Target, I + 1, Us...>::type>;
 	};
 
 public:
 	template <typename U>
-	static constexpr size_t index_of = index_of_helper<U, 0, T...>::type::value;
+	static constexpr int index_of = index_of_helper<U, 0, T...>::type::value;
 
 public:
 
@@ -259,16 +256,55 @@ public:
 	using cast = type_list<Caster<T>...>;
 
 
+private:
+	template <template <typename> typename Condition, int I, typename...> struct find_helper;
+	template <template <typename> typename Condition, int I> struct find_helper<Condition, I> {
+		using type = std::integral_constant<int, -1>;
+	};
+	template <template <typename> typename Condition, int I, typename U, typename... Us>
+	struct find_helper<Condition, I, U, Us...> {
+		using type = std::conditional_t<
+			Condition<U>::value,
+			std::integral_constant<int, I>,
+			typename find_helper<Condition, I + 1, Us...>::type>;
+	};
 
+public:
+	template<template <typename> typename Condition>
+	static constexpr int find_first = find_helper<Condition, 0, T...>::type::value;
+
+
+private:
+	template <int I, typename V, typename Left, typename Right>
+	struct replace_helper;
+	template <typename V>
+	struct replace_helper<0, V, type_list<>, type_list<>> {
+		using type = type_list<>;
+	};
+	template <typename V, typename... Left, typename U, typename... Right>
+	struct replace_helper<0, V, type_list<Left...>, type_list<U, Right...>> {
+		using type = type_list< Left..., V, Right...>;
+	};
+	template <int I, typename V, typename... Left, typename U, typename... Right>
+	struct replace_helper<I, V, type_list<Left...>, type_list<U, Right...>> {
+		using type = replace_helper<I - 1, V, type_list<Left..., U>, type_list< Right...>>::type;
+	};
+
+public:
+	template <int I, typename V>
+	using replace_at = replace_helper<I, V, type_list<>, type_list<T...>>::type;
 
 };
-
+//template<typename T> struct is_double : std::is_same<T, double> {};
+//auto x = type_list<int, float, double>::find_first<is_double>;
+//type_list<int, float, double>::replace_at<1, int>;
 
 #ifdef _MSC_VER
 #define MSC_EBO __declspec(empty_bases)
 #else
 #define MSC_EBO
 #endif // DEBUG
+
 
 
 template<typename... T>
@@ -278,12 +314,114 @@ struct MultiInherit<> {};
 template<typename... T>
 struct MSC_EBO MultiInherit<type_list<T...>> : T... {};
 
+template<typename T>
+struct pub;
+template<typename T>
+struct priv;
+
+template<typename>
+struct ProtectedMultiInherit;
+template<typename... T>
+struct MSC_EBO ProtectedMultiInherit<type_list<T...>> : protected T... {};
+
+template<typename Pub, typename Prot, typename Priv>
+struct UnWarpControlSymbolsImplRes;
+template<typename... Pub, typename... Prot, typename... Priv>
+struct UnWarpControlSymbolsImplRes<type_list<Pub...>, type_list<Prot...>, type_list<Priv...>>
+{
+	using pubs = type_list<Pub...>;
+	using prots = type_list<Prot...>;
+	using privs = type_list<Priv...>;
+};
+template<typename Unsolve, typename Pub, typename Prot, typename Priv>
+struct UnWarpControlSymbolsImpl;
+template<typename... Pub, typename... Prot, typename... Priv>
+struct UnWarpControlSymbolsImpl<
+	type_list<>,
+	type_list<Pub...>,
+	type_list<Prot...>,
+	type_list<Priv...>>
+{
+	using type = UnWarpControlSymbolsImplRes<
+		type_list<Pub...>,
+		type_list<Prot...>,
+		type_list<Priv...>>;
+};
+template<typename U, typename... Unsolve,
+	typename... Pub, typename... Prot, typename... Priv>
+struct UnWarpControlSymbolsImpl<
+	type_list<U, Unsolve...>,
+	type_list<Pub...>,
+	type_list<Prot...>,
+	type_list<Priv...>>
+{
+	using type = UnWarpControlSymbolsImpl<
+		type_list<Unsolve...>,
+		type_list<Pub...>,
+		type_list<Prot..., U>,
+		type_list<Priv...>>::type;
+};
+template<typename U, typename... Unsolve,
+	typename... Pub, typename... Prot, typename... Priv>
+struct UnWarpControlSymbolsImpl<
+	type_list<pub<U>, Unsolve...>,
+	type_list<Pub...>,
+	type_list<Prot...>,
+	type_list<Priv...>>
+{
+	using type = UnWarpControlSymbolsImpl<
+		type_list<Unsolve...>,
+		type_list<Pub..., U>,
+		type_list<Prot...>,
+		type_list<Priv...>>::type;
+};
+template<typename U, typename... Unsolve,
+	typename... Pub, typename... Prot, typename... Priv>
+struct UnWarpControlSymbolsImpl<
+	type_list<priv<U>, Unsolve...>,
+	type_list<Pub...>,
+	type_list<Prot...>,
+	type_list<Priv...>>
+{
+	using type = UnWarpControlSymbolsImpl<
+		type_list<Unsolve...>,
+		type_list<Pub...>,
+		type_list<Prot...>,
+		type_list<Priv..., U>>::type;
+};
+template<typename... T>
+using UnWarpControlSymbols = UnWarpControlSymbolsImpl<
+	type_list<T...>, type_list<>, type_list<>, type_list<>>::type;
+
+template<typename, typename, typename>
+struct ControlledMultiInheritImpl;
+template<typename... Pub, typename... Prot, typename... Priv>
+struct MSC_EBO ControlledMultiInheritImpl<
+	type_list<Pub...>,
+	type_list<Prot...>,
+	type_list<Priv...>> : public Pub..., protected Prot..., private Priv... { };
+
+
+template<typename... T>
+struct MSC_EBO ControlledMultiInherit :
+	ControlledMultiInheritImpl<
+	typename UnWarpControlSymbols<T...>::pubs,
+	typename UnWarpControlSymbols<T...>::prots,
+	typename UnWarpControlSymbols<T...>::privs> { };
+template<>
+struct ControlledMultiInherit<> {};
+template<typename... T>
+struct MSC_EBO ControlledMultiInherit<type_list<T...>> :
+	ControlledMultiInherit<T...> { };
+
 
 template <typename... Method>
-struct function_set : MultiInherit<Method...>
+struct function_set_impl : MultiInherit<Method...>
 {
 	using method_list = type_list<Method...>;
 };
+template <typename... Method>
+struct function_set_impl<type_list< Method...>> : function_set_impl< Method...> {};
 
 template <typename T, typename ValidList, typename Unverified>
 struct valid_method;
@@ -294,20 +432,10 @@ struct valid_method<T, type_list<Valid...>, type_list<>>
 	using method_list = type_list<Valid...>;
 };
 
-template <typename T, typename Method>
-struct match_condition { static constexpr bool value = false; };
-template <typename T, typename Method> requires (Method::template ImplForCond<T>) && (Method::template RemoveForCond<T>)
-struct match_condition<T, Method> { static constexpr bool value = true; };
-template <typename T, typename Method> requires (Method::template ImplForCond<T>) && (!requires { Method::template RemoveForCond<T>; })
-struct match_condition<T, Method> { static constexpr bool value = true; };
-template <typename T, typename Method> requires (Method::template RemoveForCond<T>) && (!requires { Method::template ImplForCond<T>; })
-struct match_condition<T, Method> { static constexpr bool value = true; };
-
-
 template <typename T, typename... Valid, typename Method, typename... Methods>
 struct valid_method<T, type_list<Valid...>, type_list<Method, Methods...>>
 {
-	constexpr static bool is_valid = match_condition<T, Method>::value;
+	constexpr static bool is_valid = Method::template __cond__<T>;
 	using new_list = std::conditional_t<is_valid, type_list<Valid..., Method>, type_list<Valid...>>;
 	using method_list = typename valid_method<T, new_list, type_list<Methods...>>::method_list;
 };
@@ -320,8 +448,11 @@ struct ValidInterface : MultiInherit<typename valid_method<Final, type_list<>, t
 
 
 template <typename FunctionSet, typename... T>
-struct TestInherit : FunctionSet, MultiInherit<T...>
-{};
+struct MSC_EBO TestInherit : FunctionSet, ControlledMultiInherit<T...>
+{
+	template <typename T>
+	friend struct method;
+};
 
 template<typename FunctionSets, typename MethodList>
 struct UnwarpMethodsImpl;
@@ -342,24 +473,29 @@ struct UnwarpMethods
 	using method_list = typename UnwarpMethodsImpl<type_list<FunctionSet...>, type_list<>>::method_list;
 };
 
-template<typename Methods>
-struct FunctionSetCatImpl;
-template<typename... Method>
-struct FunctionSetCatImpl<type_list<Method...>> : function_set<Method...> {};
 template<typename... FunctionSet>
-struct FunctionSetCat : FunctionSetCatImpl<typename UnwarpMethods<FunctionSet...>::method_list> {};
+struct FunctionSetCat : function_set_impl<typename UnwarpMethods<FunctionSet...>::method_list> {};
 
 template <typename FunctionSets, typename Fragments>
 struct InheritImpl;
 template <typename... FunctionSet, typename... Fragment>
 struct MSC_EBO InheritImpl<type_list<FunctionSet...>, type_list<Fragment...>> :
-	MultiInherit<Fragment...>,
+	ControlledMultiInherit<Fragment...>,
 	ValidInterface<TestInherit<FunctionSetCat<FunctionSet...>, Fragment...>, FunctionSetCat<FunctionSet...>>
 {
 	using fragment_list = type_list<Fragment...>;
 	using function_sets = type_list<FunctionSet...>;
 	using methods = FunctionSetCat<FunctionSet...>;
+
+	template <typename T>
+	friend struct method;
 };
+
+template <typename T>
+struct method;
+
+template <typename... T>
+struct function_set : function_set_impl<method<T>...> {};
 
 template <typename T>
 concept has_fragment_list = requires { typename T::fragment_list; };
@@ -369,45 +505,144 @@ template <typename T>
 concept has_function_sets = requires { typename T::function_sets; };
 
 
+struct fragment_info_base
+{
+	enum visibility { PRIV,PROT,PUB };
+};
+template<typename T>
+struct fragment_info : fragment_info_base
+{
+	using ident = T;
+	using type = T;
+	static constexpr visibility vib = PROT;
+};
+template<typename T>
+struct fragment_info<pub<T>> : fragment_info_base
+{
+	using ident = pub<T>;
+	using type = T;
+	static constexpr visibility vib = PUB;
+};
+template<typename T>
+struct fragment_info<priv<T>> : fragment_info_base
+{
+	using ident = priv<T>;
+	using type = T;
+	static constexpr visibility vib = PRIV;
+};
+
+template<typename Unsolve, typename InfoList>
+struct mega_frag_idents_impl;
+template<typename... Infos>
+struct mega_frag_idents_impl<type_list<>, type_list<Infos...>>
+{
+	template<typename Info>
+	using cast_ident = Info::ident;
+	using type = type_list<Infos...>::cast<cast_ident>;
+};
+
+template<typename List, int I, typename New>
+struct fragment_replace
+{
+	static constexpr auto old_vib = List::template get<I>::vib;
+	static constexpr auto new_vib = New::vib;
+	static constexpr bool use_new = new_vib > old_vib;
+	using type = std::conditional_t< use_new,
+		typename List::template replace_at<I, New>,
+		List>;
+};
+template<typename... T, typename New>
+struct fragment_replace<type_list<T...>, -1, New> {
+	using type = type_list<T..., New>;
+};
+
+template<typename U, typename...  Unsolve, typename... Infos>
+struct mega_frag_idents_impl<type_list<U, Unsolve...>, type_list<Infos...>>
+{
+	template<typename Info>
+	struct is_same_fragment : std::is_same<typename Info::type,typename U::type> {};
+	static constexpr size_t index = type_list<Infos...>::template find_first<is_same_fragment>;
+	using new_list = fragment_replace<type_list<Infos...>, index, U>::type;
+	using type = mega_frag_idents_impl<type_list<Unsolve...>, new_list>::type;
+};
+
+
+template <typename... Fragment>
+using mega_frag_idents = mega_frag_idents_impl<type_list<fragment_info<Fragment>...> , type_list<> >::type;
+
+
+template <typename FuncSets, typename Fragments>
+struct inherit_infos_impl_res;
+template <typename... FuncSet, typename... Fragment>
+struct inherit_infos_impl_res<type_list<FuncSet...>, type_list<Fragment...>>
+{
+	using function_sets = type_list<FuncSet...>;
+	using fragments = mega_frag_idents<Fragment...>;
+};
+
 template < typename UnsolveTypes, typename FuncSets, typename Fragments>
 struct inherit_infos_impl;
 template <typename... FuncSet, typename... Fragment>
 struct inherit_infos_impl<type_list<>, type_list<FuncSet...>, type_list<Fragment...>>
 {
-	using info = type_list<
+	using info = inherit_infos_impl_res<
 		typename type_list<FuncSet...>::unique,
-		typename type_list<Fragment...>::unique
+		type_list<Fragment...>
 	>;
 };
 template <typename T, typename... Ts, typename... FuncSet, typename... Fragment> requires (!has_fragment_list<T>) && (!has_method_list<T>) //normal fragment
-struct inherit_infos_impl<type_list<T, Ts...>, type_list<FuncSet...>, type_list<Fragment...>>
+struct inherit_infos_impl<
+	type_list<T, Ts...>,
+	type_list<FuncSet...>,
+	type_list<Fragment...>>
 {
-	using info = typename inherit_infos_impl<type_list<Ts...>, type_list<FuncSet...>, type_list<Fragment..., T>>::info;
+	using info = typename inherit_infos_impl<
+		type_list<Ts...>,
+		type_list<FuncSet...>,
+		type_list<Fragment..., T>>::info;
 };
 template <typename T, typename... Ts, typename... FuncSet, typename... Fragment> requires (!has_fragment_list<T>) && (has_method_list<T>) //func set
-struct inherit_infos_impl<type_list<T, Ts...>, type_list<FuncSet...>, type_list<Fragment...>>
+struct inherit_infos_impl<
+	type_list<T, Ts...>,
+	type_list<FuncSet...>,
+	type_list<Fragment...>>
 {
-	using info = typename inherit_infos_impl<type_list<Ts...>, type_list<FuncSet..., T>, type_list<Fragment...>>::info;
+	using info = typename inherit_infos_impl<
+		type_list<Ts...>,
+		type_list<FuncSet..., T>,
+		type_list<Fragment...>>::info;
 };
 template <typename T, typename... Ts, typename... FuncSet, typename... Fragment> requires (has_fragment_list<T>) && (!has_function_sets<T>) //object
-struct inherit_infos_impl<type_list<T, Ts...>, type_list<FuncSet...>, type_list<Fragment...>>
+struct inherit_infos_impl<
+	type_list<T, Ts...>,
+	type_list<FuncSet...>,
+	type_list<Fragment...>>
 {
 	using new_fragment_list = type_list<Fragment...>::template cat<typename T::fragment_list>;
-	using info = typename inherit_infos_impl<type_list<Ts...>, type_list<FuncSet...>, new_fragment_list>::info;
+	using info = typename inherit_infos_impl<
+		type_list<Ts...>,
+		type_list<FuncSet...>,
+		new_fragment_list>::info;
 };
 template <typename T, typename... Ts, typename... FuncSet, typename... Fragment> requires (has_fragment_list<T>) && (has_function_sets<T>)
-struct inherit_infos_impl<type_list<T, Ts...>, type_list<FuncSet...>, type_list<Fragment...>>
+struct inherit_infos_impl<
+	type_list<T, Ts...>,
+	type_list<FuncSet...>,
+	type_list<Fragment...>>
 {
 	using new_fragment_list = type_list<Fragment...>::template cat<typename T::fragment_list>;
 	using new_function_sets = type_list <FuncSet...>::template cat<typename T::function_sets>;
-	using info = typename inherit_infos_impl<type_list<Ts...>, new_function_sets, new_fragment_list>::info;
+	using info = typename inherit_infos_impl<
+		type_list<Ts...>,
+		new_function_sets,
+		new_fragment_list>::info;
 };
 template <typename... T>
 struct inherit_infos
 {
 	using info = inherit_infos_impl<type_list<T...>, type_list<>, type_list<>>::info;
-	using function_sets = info::template get<0>;
-	using fragments = info::template get<1>;
+	using function_sets = info::function_sets;
+	using fragments = info::fragments;
 };
 
 template <typename... T>
@@ -416,34 +651,52 @@ struct combine : InheritImpl<
 	typename inherit_infos<T...>::fragments> {
 
 	template<typename... U>
+	struct remove_helper
+	{
+		template<typename V>
+		using cast_to_type = fragment_info<V>::type;
+		using remove_list = type_list<U...>::template cast<cast_to_type>;
+		template<typename V>
+		struct in_remove_list
+		{
+			constexpr static bool value = remove_list::template contains<cast_to_type<V>>;
+		};
+		using filtered_fragments = inherit_infos<T...>::fragments::template filter_without<in_remove_list>;
+	};
+
+	template<typename... U>
 	using remove = InheritImpl<
 		typename inherit_infos<T...>::function_sets,
-		typename inherit_infos<T...>::fragments::template erase<U...>>;
+		typename remove_helper<U...>::filtered_fragments>;
 };
 
 
 template<typename... T>
-struct exclude;
-
+struct exclude_impl;
 template<typename... T>
-struct impl_for
+struct any_impl;
+template<typename... T>
+class impl_for
 {
 	template<typename Self, typename T>
-	static constexpr bool transform = std::derived_from<Self, T>;
+	static constexpr bool transform = std::is_base_of_v<T, Self>;
 	template<typename Self, typename... T>
-	static constexpr bool transform<Self, exclude<T...>> = (!std::derived_from<Self, T> && ...);
+	static constexpr bool transform<Self, exclude_impl<T...>> = (!std::is_base_of_v<T,Self> && ...);
+	template<typename Self, typename... T>
+	static constexpr bool transform<Self, any_impl<T...>> = (std::is_base_of_v<T,Self> || ...);
 
-	template <typename Self> static constexpr bool ImplForCond = (transform<Self, T> && ...);
+	template <typename Self> static constexpr bool __cond__ = (transform<Self, T> && ...);
 	template <typename T, typename ValidList, typename Unverified>
 	friend struct valid_method;
+
+public:
+	template<typename... U>
+	using exclude = impl_for<T..., exclude_impl<U...>>;
+	template<typename... U>
+	using any = impl_for<T..., any_impl<U...>>;
 };
-//template<typename... T>
-//struct remove_for //this requires a MSV_EBO for derived
-//{
-//	template <typename Self> static constexpr bool RemoveForCond = !(std::derived_from<Self, T> || ...);
-//	template <typename T, typename ValidList, typename Unverified>
-//	friend struct valid_method;
-//};
+
+#define METHOD_GROUP(name)template <> struct method<struct name>
 
 
 struct FragmentA { int32_t a{}; };
@@ -451,29 +704,29 @@ struct FragmentB { int32_t b{}; };
 struct FragmentC { int32_t c{}; };
 struct FragmentD { int32_t d{}; };
 
-struct Methods1 : impl_for<FragmentA, FragmentB, exclude<FragmentC>> {
-	auto func_ab(this auto&& self) { return self.a + self.b; }
-	auto func_ab_1(this auto&& self) { return self.a - self.b; }
+METHOD_GROUP(Methods1) : impl_for<FragmentA, FragmentB>::exclude<FragmentC> {
+	auto func_ab(this auto && self) { return self.a + self.b; }
+	auto func_ab_1(this auto && self) { return self.a - self.b; }
 };
-struct Methods2 : impl_for<FragmentA, FragmentC> {
-	auto func_ac(this auto&& self) { return self.a + self.c; }
+METHOD_GROUP(Methods2) : impl_for<FragmentA, FragmentC>{
+	auto func_ac(this auto && self) { return self.a + self.c; }
 };
-struct Methods3 : impl_for<FragmentB, FragmentC> {
-	auto func_bc(this auto&& self) { return self.b + self.c; }
+METHOD_GROUP(Methods3) : impl_for<FragmentB, FragmentC>{
+	auto func_bc(this auto && self) { return self.b + self.c; }
 };
-struct Methods4 : impl_for<FragmentC, exclude<FragmentA, FragmentB>> {
-	auto func_c(this auto&& self) { return self.c; }
+METHOD_GROUP(Methods4) : impl_for<FragmentC>::exclude<FragmentA, FragmentB>{
+	auto func_c(this auto && self) { return self.c; }
 };
-struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC> {
-	auto initializer(this auto&& self, int32_t a, int32_t b, int32_t c) {
+METHOD_GROUP(Methods5) : impl_for<FragmentA, FragmentB, FragmentC>{
+	auto initializer(this auto && self, int32_t a, int32_t b, int32_t c) {
 		self.a = a;
 		self.b = b;
 		self.c = c;
 	}
 };
-struct FuncSet1 : function_set <Methods1, Methods2, Methods3, Methods4, Methods5> {};
+struct FuncSet1 : function_set<Methods1, Methods2, Methods3, Methods4, Methods5> {};
 
-struct Object1 : combine<FuncSet1, FragmentA, FragmentB> {};
+struct Object1 : combine<FuncSet1, pub<FragmentA>, FragmentB> {};
 static_assert(sizeof(Object1) == 2 * sizeof(int32_t));
 
 struct Object2 : combine<FuncSet1, FragmentA, FragmentC> {};
@@ -482,12 +735,13 @@ static_assert(sizeof(Object2) == 2 * sizeof(int32_t));
 struct Object3 : combine<Object1, Object2> {};
 static_assert(sizeof(Object3) == 3 * sizeof(int32_t));
 
-struct Object4 : combine<Object3, FragmentD>::remove<FragmentA, FragmentB> {};
+struct Object4 : combine<Object3, priv<FragmentD>>::remove<FragmentA, FragmentB> {};
 static_assert(sizeof(Object4) == 2 * sizeof(int32_t));
 
 int main() {
 
 	Object1 o1;
+	o1.a = 1;
 	o1.func_ab();
 	o1.func_ab_1();
 
@@ -495,6 +749,7 @@ int main() {
 	o2.func_ac();
 
 	Object3 o3;
+
 	o3.initializer(1, 2, 3);
 	o3.func_ac();
 	o3.func_bc();
