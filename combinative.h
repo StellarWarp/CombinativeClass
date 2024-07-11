@@ -137,30 +137,55 @@ namespace combinative
 
 		template <typename T, typename ValidList, typename Unverified>
 		struct valid_method;
-
 		template <typename T, typename... Valid>
 		struct valid_method<T, type_list<Valid...>, type_list<>>
 		{
 			using method_list = type_list<Valid...>;
 		};
-
+		//template <typename T, typename... Valid, typename Method, typename... Methods> requires (!requires {Method::template __cond__<T>; })
+		//	struct valid_method<T, type_list<Valid...>, type_list<Method, Methods...>>
+		//{
+		//	constexpr static bool is_valid = true;
+		//	using new_list = std::conditional_t<is_valid, type_list<Valid..., Method>, type_list<Valid...>>;
+		//	using method_list = typename valid_method<T, new_list, type_list<Methods...>>::method_list;
+		//};
 		template <typename T, typename... Valid, typename Method, typename... Methods>
-		struct valid_method<T, type_list<Valid...>, type_list<Method, Methods...>>
+		struct valid_method<T, type_list<Valid...>, type_list<Method, Methods...>>  
 		{
-			constexpr static bool is_valid = Method::template __cond__<T>;
+			constexpr static bool is_valid = Method::template __cond__<T>::value;
 			using new_list = std::conditional_t<is_valid, type_list<Valid..., Method>, type_list<Valid...>>;
 			using method_list = typename valid_method<T, new_list, type_list<Methods...>>::method_list;
 		};
 
-		template <typename Final, typename FunctionSet>
-		struct ValidInterface : MultiInherit<typename valid_method<Final, type_list<>, typename FunctionSet::method_list>::method_list>
+		template <typename Final>
+		struct ValidInterface : MultiInherit<typename valid_method<Final, type_list<>, typename Final::method_list>::method_list>
 		{
-			using method_list = typename FunctionSet::method_list;
+			using method_list = valid_method<Final, type_list<>, typename Final::method_list>::method_list;
+		};
+
+		template <typename T, typename ValidList, typename Unverified>
+		struct valid_method_frag;
+		template <typename T, typename... Valid>
+		struct valid_method_frag<T, type_list<Valid...>, type_list<>>
+		{
+			using method_list = type_list<Valid...>;
+		};
+		template <typename T, typename... Valid, typename Method, typename... Methods>
+		struct valid_method_frag<T, type_list<Valid...>, type_list<Method, Methods...>>
+		{
+			constexpr static bool is_valid = Method::template __frag_cond__<T>;
+			using new_list = std::conditional_t<is_valid, type_list<Valid..., Method>, type_list<Valid...>>;
+			using method_list = typename valid_method_frag<T, new_list, type_list<Methods...>>::method_list;
+		};
+		template <typename Final, typename FunctionSet>
+		struct ValidInterfaceFrag : MultiInherit<typename valid_method_frag<Final, type_list<>, typename FunctionSet::method_list>::method_list>
+		{
+			using method_list = valid_method_frag<Final, type_list<>, typename FunctionSet::method_list>::method_list;
 		};
 
 
 		template <typename FunctionSet, typename... T>
-		struct MSC_EBO TestInherit : FunctionSet, ControlledMultiInherit<T...>
+		struct MSC_EBO TestInherit : ValidInterfaceFrag<ControlledMultiInherit<T...>, FunctionSet>, ControlledMultiInherit<T...>
 		{
 			template <typename T>
 			friend struct method;
@@ -193,7 +218,7 @@ namespace combinative
 		template <typename... FunctionSet, typename... Fragment>
 		struct MSC_EBO InheritImpl<type_list<FunctionSet...>, type_list<Fragment...>> :
 			ControlledMultiInherit<Fragment...>,
-			ValidInterface<TestInherit<FunctionSetCat<FunctionSet...>, Fragment...>, FunctionSetCat<FunctionSet...>>
+			ValidInterface<TestInherit<FunctionSetCat<FunctionSet...>, Fragment...>>
 		{
 			using fragment_list = type_list<Fragment...>;
 			using function_sets = type_list<FunctionSet...>;
@@ -338,7 +363,7 @@ namespace combinative
 				type_list<FuncSet...>,
 				new_fragment_list>::info;
 		};
-		template <typename T, typename... Ts, typename... FuncSet, typename... Fragment> requires (has_fragment_list<T>) && (has_function_sets<T>)
+		template <typename T, typename... Ts, typename... FuncSet, typename... Fragment> requires (has_fragment_list<T>) && (has_function_sets<T>) //object
 			struct inherit_infos_impl<
 			type_list<T, Ts...>,
 			type_list<FuncSet...>,
@@ -376,13 +401,27 @@ namespace combinative
 				{
 					constexpr static bool value = remove_list::template contains<cast_to_type<V>>;
 				};
-				using filtered_fragments = inherit_infos<T...>::fragments::template filter_without<in_remove_list>;
+				using fragments = inherit_infos<T...>::fragments::template filter_without<in_remove_list>;
+			};
+			template<typename... U>
+			struct visibility_override_helper
+			{
+				template<typename V>
+				using cast_to_type = fragment_info<V>::type;
+				using current_fragments = inherit_infos<T...>::fragments::template cast<cast_to_type>;
+				static_assert((current_fragments::template contains<cast_to_type<U>> || ...),
+					"visibility override can only be used with inheritance");
+				using fragments = remove_helper<U...>::fragments::template cat<type_list<U...>>;
 			};
 		public:
 			template<typename... U>
 			using remove = InheritImpl<
 				typename inherit_infos<T...>::function_sets,
-				typename remove_helper<U...>::filtered_fragments>;
+				typename remove_helper<U...>::fragments>;
+			template<typename... U>
+			using visibility_override = InheritImpl<
+				typename inherit_infos<T...>::function_sets,
+				typename visibility_override_helper<U...>::fragments>;
 		};
 
 
@@ -391,26 +430,56 @@ namespace combinative
 		template<typename... T>
 		struct any_impl;
 		template<typename... T>
+		struct depends_on_any_impl;
+		template<typename... T>
+		struct depends_on_all_impl;
+		template<typename Lambda>
+		struct custom_cond_impl;
+
+		template<typename... T>
 		class impl_for
 		{
 			template<typename Self, typename T>
 			static constexpr bool transform = std::is_base_of_v<T, Self>;
 			template<typename Self, typename... T>
+			static constexpr bool transform<Self, any_impl<T...>> = (std::is_base_of_v<T, Self> || ...);
+			template<typename Self, typename... T>
 			static constexpr bool transform<Self, exclude_impl<T...>> = (!std::is_base_of_v<T, Self> && ...);
 			template<typename Self, typename... T>
-			static constexpr bool transform<Self, any_impl<T...>> = (std::is_base_of_v<T, Self> || ...);
+			static constexpr bool transform<Self, depends_on_any_impl<T...>> = (method<T>::template __frag_cond__<Self> || ...);
+			template<typename Self, typename... T>
+			static constexpr bool transform<Self, depends_on_all_impl<T...>> = (method<T>::template __frag_cond__<Self> && ...);
+			template<typename Self, typename Lambda>
+			static constexpr bool transform<Self, custom_cond_impl<Lambda>> = true;
 
-			template <typename Self> static constexpr bool __cond__ = (transform<Self, T> && ...);
+			template <typename Self> static constexpr bool __frag_cond__ = (transform<Self, T> && ...);
+
+			template<typename Self, typename U>
+			static constexpr bool custom_cond_tmp = true;
+			template<typename Self, typename Lambda>
+			static constexpr bool custom_cond_tmp<Self, custom_cond_impl<Lambda>> = std::invocable<Lambda, Self>;
+
+			template <typename Self> using __cond__ = std::bool_constant<(custom_cond_tmp<Self, T> && ...)>;
+
 			template <typename T, typename ValidList, typename Unverified>
 			friend struct valid_method;
+			template <typename T, typename ValidList, typename Unverified>
+			friend struct valid_method_frag;
 
 		public:
 			template<typename... U>
 			using exclude = impl_for<T..., exclude_impl<U...>>;
 			template<typename... U>
 			using any = impl_for<T..., any_impl<U...>>;
+			template<typename... U>
+			using depends_on_any = impl_for<T..., depends_on_any_impl<U...>>;
+			template<typename... U>
+			using depends_on = impl_for<T..., depends_on_all_impl<U...>>;
+			template<typename Lambda>
+			using custom_cond = impl_for<T..., custom_cond_impl<Lambda>>;
 		};
 	}
+
 
 	template<typename... T>
 	using impl_for = detail::impl_for<T...>;

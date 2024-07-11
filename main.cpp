@@ -2,7 +2,6 @@
 #include <iostream>
 #include "combinative.h"
 
-
 using namespace combinative;
 
 #define METHOD_GROUP COMBINATIVE_METHOD_GROUP
@@ -47,6 +46,11 @@ static_assert(sizeof(Object3) == 3 * sizeof(int32_t));
 struct Object4 : combine<Object3, priv<FragmentD>>::remove<FragmentA, FragmentB> {};
 static_assert(sizeof(Object4) == 2 * sizeof(int32_t));
 
+struct Object5 : combine<Object4>::visibility_override<pub<FragmentD>> {};
+static_assert(sizeof(Object5) == sizeof(Object4));
+
+
+
 int main() {
 
 	Object1 o1;
@@ -65,6 +69,9 @@ int main() {
 
 	Object4 o4;
 	o4.func_c();
+
+	Object5 o5;
+	o5.d;
 }
 
 
