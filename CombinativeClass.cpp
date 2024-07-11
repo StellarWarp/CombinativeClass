@@ -508,7 +508,7 @@ concept has_function_sets = requires { typename T::function_sets; };
 
 struct fragment_info_base
 {
-	enum visibility { PRIV,PROT,PUB };
+	enum visibility { PRIV, PROT, PUB };
 };
 template<typename T>
 struct fragment_info : fragment_info_base
@@ -561,7 +561,7 @@ template<typename U, typename...  Unsolve, typename... Infos>
 struct mega_frag_idents_impl<type_list<U, Unsolve...>, type_list<Infos...>>
 {
 	template<typename Info>
-	struct is_same_fragment : std::is_same<typename Info::type,typename U::type> {};
+	struct is_same_fragment : std::is_same<typename Info::type, typename U::type> {};
 	static constexpr size_t index = type_list<Infos...>::template find_first<is_same_fragment>;
 	using new_list = fragment_replace<type_list<Infos...>, index, U>::type;
 	using type = mega_frag_idents_impl<type_list<Unsolve...>, new_list>::type;
@@ -569,7 +569,7 @@ struct mega_frag_idents_impl<type_list<U, Unsolve...>, type_list<Infos...>>
 
 
 template <typename... Fragment>
-using mega_frag_idents = mega_frag_idents_impl<type_list<fragment_info<Fragment>...> , type_list<> >::type;
+using mega_frag_idents = mega_frag_idents_impl<type_list<fragment_info<Fragment>...>, type_list<> >::type;
 
 
 template <typename FuncSets, typename Fragments>
@@ -682,9 +682,9 @@ class impl_for
 	template<typename Self, typename T>
 	static constexpr bool transform = std::is_base_of_v<T, Self>;
 	template<typename Self, typename... T>
-	static constexpr bool transform<Self, exclude_impl<T...>> = (!std::is_base_of_v<T,Self> && ...);
+	static constexpr bool transform<Self, exclude_impl<T...>> = (!std::is_base_of_v<T, Self> && ...);
 	template<typename Self, typename... T>
-	static constexpr bool transform<Self, any_impl<T...>> = (std::is_base_of_v<T,Self> || ...);
+	static constexpr bool transform<Self, any_impl<T...>> = (std::is_base_of_v<T, Self> || ...);
 
 	template <typename Self> static constexpr bool __cond__ = (transform<Self, T> && ...);
 	template <typename T, typename ValidList, typename Unverified>
@@ -700,13 +700,16 @@ public:
 #define METHOD_GROUP(name)template <> struct method<struct name>
 #define SELF_AS(fragment_name) static_cast<fragment_name&>(self)
 
+template<auto ...>
+struct var_list {};
+
 
 struct FragmentA { int32_t a{}; };
 struct FragmentB { int32_t b{}; };
 struct FragmentC { int32_t c{}; };
 struct FragmentD { int32_t d{}; };
 
-METHOD_GROUP(Methods1) : impl_for<FragmentA, FragmentB>::exclude<FragmentC> {
+METHOD_GROUP(Methods1) : impl_for<FragmentA, FragmentB>::exclude<FragmentC>{
 	auto func_ab(this auto && self) { return self.a + self.b; }
 	auto func_ab_1(this auto && self) { return self.a - self.b; }
 };
