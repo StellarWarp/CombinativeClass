@@ -1,6 +1,7 @@
 ﻿#include <type_traits>
 #include <concepts>
 #include <tuple>
+#include <iostream>
 
 template <typename... T> struct type_list {
 	static constexpr size_t size = sizeof...(T);
@@ -649,7 +650,7 @@ template <typename... T>
 struct combine : InheritImpl<
 	typename inherit_infos<T...>::function_sets,
 	typename inherit_infos<T...>::fragments> {
-
+private:
 	template<typename... U>
 	struct remove_helper
 	{
@@ -663,7 +664,7 @@ struct combine : InheritImpl<
 		};
 		using filtered_fragments = inherit_infos<T...>::fragments::template filter_without<in_remove_list>;
 	};
-
+public:
 	template<typename... U>
 	using remove = InheritImpl<
 		typename inherit_infos<T...>::function_sets,
@@ -697,6 +698,7 @@ public:
 };
 
 #define METHOD_GROUP(name)template <> struct method<struct name>
+#define SELF_AS(fragment_name) static_cast<fragment_name&>(self)
 
 
 struct FragmentA { int32_t a{}; };
@@ -719,9 +721,9 @@ METHOD_GROUP(Methods4) : impl_for<FragmentC>::exclude<FragmentA, FragmentB>{
 };
 METHOD_GROUP(Methods5) : impl_for<FragmentA, FragmentB, FragmentC>{
 	auto initializer(this auto && self, int32_t a, int32_t b, int32_t c) {
-		self.a = a;
-		self.b = b;
-		self.c = c;
+		SELF_AS(FragmentA).a = a;
+		SELF_AS(FragmentB).b = b;
+		SELF_AS(FragmentC).c = c;
 	}
 };
 struct FuncSet1 : function_set<Methods1, Methods2, Methods3, Methods4, Methods5> {};
