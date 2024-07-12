@@ -173,12 +173,12 @@ namespace combinative
 
 
 		template <typename... Method>
-		struct function_set_impl : MultiInherit<Method...>
+		struct function_set_base : MultiInherit<Method...>
 		{
 			using method_list = type_list<Method...>;
 		};
 		template <typename... Method>
-		struct function_set_impl<type_list< Method...>> : function_set_impl< Method...> {};
+		struct function_set_base<type_list< Method...>> : function_set_base< Method...> {};
 
 		template <typename T, typename ValidList, typename Unverified>
 		struct valid_method;
@@ -302,7 +302,7 @@ friend typename methods::template get<(n)*16+15>;\
 		};
 
 		template<typename... FunctionSet>
-		struct FunctionSetCat : function_set_impl<typename UnwarpMethods<FunctionSet...>::method_list> {};
+		struct FunctionSetCat : function_set_base<typename UnwarpMethods<FunctionSet...>::method_list> {};
 
 		template <typename FunctionSets, typename Fragments>
 		struct InheritImpl;
@@ -329,13 +329,7 @@ friend typename methods::template get<(n)*16+15>;\
 #undef _COMBINATIVE_MAKE_FRIENDS_32
 #undef _COMBINATIVE_MAKE_FRIENDS_64
 #undef _COMBINATIVE_MAKE_FRIENDS_128
-	}
 
-
-	template <typename... T>
-	struct function_set : detail::function_set_impl<T...> {};
-
-	namespace detail {
 
 		template <typename T>
 		concept has_fragment_list = requires { typename T::fragment_list; };
@@ -602,9 +596,31 @@ friend typename methods::template get<(n)*16+15>;\
 		};
 
 
+		template <typename Unsolve, typename Methods>
+		struct function_set_unwarp;
+		template <typename... Method>
+		struct function_set_unwarp<type_list<>,type_list<Method...>>
+		{
+			using type = function_set_base<Method...>;
+		};
+		template <typename U,typename... Unsolve, typename... Method> requires has_method_list<U>
+		struct function_set_unwarp<type_list<U, Unsolve...>, type_list<Method...>> 
+		{
+			using new_list = type_list<Method...>::template cat<typename U:: method_list>;
+			using type = function_set_unwarp<type_list<Unsolve...>, new_list>::type;
+		};
+		template <typename U, typename... Unsolve, typename... Method> requires (!has_method_list<U>)
+		struct function_set_unwarp<type_list<U, Unsolve...>, type_list<Method...>>
+		{
+			using new_list = type_list<Method...,U>;
+			using type = function_set_unwarp<type_list<Unsolve...>, new_list>::type;
+		};
+
 	}
 
 
+	template <typename... T> 
+	using function_set = detail::function_set_unwarp<type_list<T...>, type_list<>>::type;
 
 	template<typename... T>
 	using impl_for = detail::impl_for<type_list<T...>,type_list<>>;

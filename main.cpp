@@ -23,7 +23,7 @@ namespace sample
 		auto func_bc(this auto&& self) { return self.b + self.c; }
 	};
 	struct Methods4 : impl_for<FragmentC>::exclude<FragmentA, FragmentB> {
-		auto func_c(this auto&& self) { return SELF_AS(FragmentC).c; }
+		auto func_c(this auto&& self) { return static_cast<FragmentC&>(self).c; }
 	};
 
 	struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC> {
@@ -77,12 +77,35 @@ namespace sample
 		}
 	};
 
-	struct FuncSet1 : function_set<Methods1, Methods2, Methods3, Methods4, Methods5, Methods6> {};
+	using FuncSet1 = function_set<Methods1, Methods2, Methods3, Methods4, Methods5, Methods6>;
 
-	struct Object1 : combine<FuncSet1, pub<FragmentA>, FragmentB> {};
+	struct CompareTag {};
+	struct MethodsComp1 : impl_for<FragmentA>::exclude<FragmentB>::tag<CompareTag> {
+		auto comparable(this auto&& self) { return self.a; }
+	};
+	struct MethodsComp2 : impl_for<FragmentB>::exclude<FragmentA>::tag<CompareTag> {
+		auto comparable(this auto&& self) { return self.b; }
+	};
+	struct MethodsComp3 : impl_for<FragmentA, FragmentB>::tag<CompareTag> {
+		auto comparable(this auto&& self) { return self.a * self.b; }
+	};
+
+	using FuncSet2 = function_set<MethodsComp1, MethodsComp2, MethodsComp3>;
+
+	auto operator<=> (
+		std::derived_from<CompareTag> auto& a,
+		std::derived_from<CompareTag> auto& b)
+	{
+		return a.comparable() <=> b.comparable();
+	}
+
+	using FuncSetFinal = function_set<FuncSet1, FuncSet2>;
+
+
+	struct Object1 : combine<FuncSetFinal, pub<FragmentA>, FragmentB> {};
 	static_assert(sizeof(Object1) == 2 * sizeof(int32_t));
 
-	struct Object2 : combine<FuncSet1, FragmentA, FragmentC> {};
+	struct Object2 : combine<FuncSetFinal, FragmentA, FragmentC> {};
 	static_assert(sizeof(Object2) == 2 * sizeof(int32_t));
 
 	struct Object3 : combine<Object1, Object2> {};
@@ -124,6 +147,9 @@ int main() {
 	static_assert(std::invocable<is_a_accessible, Object3 >);
 	static_assert(!std::invocable<is_a_accessible, Object5 >);
 
+	o1 <=> o2;
+	o2 <=> o3;
+	o1 <=> o3;
 
 #ifdef TYPE_INFO_SAMPLE
 	generic::sample_use();
