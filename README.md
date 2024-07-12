@@ -8,7 +8,6 @@ making multi-inheritance free from the virtual bases
 
 ## Sample
 ```cpp
-
 #include "combinative.h"
 
 using namespace combinative;
@@ -18,7 +17,7 @@ using namespace combinative;
 struct FragmentA { int32_t a{}; };
 struct FragmentB { int32_t b{}; };
 struct FragmentC { int32_t c{}; };
-struct FragmentD { int32_t d{}; };
+struct FragmentD { int32_t c{}; };
 
 struct Methods1 : impl_for<FragmentA, FragmentB>::exclude<FragmentC>{
 	auto func_ab(this auto && self) { return self.a + self.b; }
@@ -31,7 +30,7 @@ struct Methods3 : impl_for<FragmentB, FragmentC>{
 	auto func_bc(this auto && self) { return self.b + self.c; }
 };
 struct Methods4 : impl_for<FragmentC>::exclude<FragmentA, FragmentB>{
-	auto func_c(this auto && self) { return self.c; }
+	auto func_c(this auto && self) { return SELF_AS(FragmentC).c; }
 };
 struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC>{
 	auto initializer(this auto && self, int32_t a, int32_t b, int32_t c) {
@@ -40,7 +39,16 @@ struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC>{
 		SELF_AS(FragmentC).c = c;
 	}
 };
-struct FuncSet1 : function_set<Methods1, Methods2, Methods3, Methods4, Methods5> {};
+struct Methods6 : impl_for<FragmentC, FragmentD> {
+	auto func_cd(this auto&& self) { 
+		auto& x = SELF_AS(FragmentC).c;
+		auto& y = SELF_AS(FragmentD).c;
+		return x + y;
+	}
+};
+
+
+struct FuncSet1 : function_set<Methods1, Methods2, Methods3, Methods4, Methods5, Methods6> {};
 
 struct Object1 : combine<FuncSet1, pub<FragmentA>, FragmentB> {};
 static_assert(sizeof(Object1) == 2 * sizeof(int32_t));
@@ -51,11 +59,11 @@ static_assert(sizeof(Object2) == 2 * sizeof(int32_t));
 struct Object3 : combine<Object1, Object2> {};
 static_assert(sizeof(Object3) == 3 * sizeof(int32_t));
 
-struct Object4 : combine<Object3, priv<FragmentD>>::remove<FragmentA, FragmentB> {};
+struct Object4 : combine<Object3, FragmentD>::remove<FragmentA, FragmentB> {};
 static_assert(sizeof(Object4) == 2 * sizeof(int32_t));
 
-struct Object5 : combine<Object4>::visibility_override<pub<FragmentD>> {};
-static_assert(sizeof(Object5) == sizeof(Object4));
+struct Object5 : combine<Object3>::visibility_override<priv<FragmentA>> {};
+static_assert(sizeof(Object5) == sizeof(Object3));
 
 
 int main() {
@@ -75,9 +83,12 @@ int main() {
 
 	Object4 o4;
 	o4.func_c();
+	o4.func_cd();
 
 	Object5 o5;
-	o5.d;
+	using is_a_accessible = decltype([](auto t) requires requires { t.a; } {});
+	static_assert(std::invocable<is_a_accessible, Object3 > );
+	static_assert(!std::invocable<is_a_accessible, Object5 > );
 }
 
 
