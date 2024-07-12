@@ -9,6 +9,7 @@ making multi-inheritance free from the virtual bases
 ## Sample
 ```cpp
 
+
 #include "sample_type_info.h"
 #include "combinative.h"
 
@@ -16,9 +17,6 @@ namespace sample
 {
 
 	using namespace combinative;
-
-#define SELF_AS(fragment_name) static_cast<fragment_name&>(self)
-
 
 	struct FragmentA { int32_t a{}; };
 	struct FragmentB { int32_t b{}; };
@@ -62,16 +60,13 @@ namespace sample
 		}
 	};
 	struct Methods6 : impl_for<FragmentC, FragmentD> {
-		auto func_cd_0(this auto&& self) {
-			auto& x = static_cast<FragmentC&>(self).c;
-			auto& y = static_cast<FragmentD&>(self).c;
-			return x + y;
-		}
+#define self_as(fragment_name) static_cast<fragment_name&>(self)
 		auto func_cd(this auto&& self) {
-			auto& x = SELF_AS(FragmentC).c;
-			auto& y = SELF_AS(FragmentD).c;
+			auto& x = self_as(FragmentC).c;
+			auto& y = self_as(FragmentD).c;
 			return x + y;
 		}
+#undef self_as
 		auto func_cd_1(this auto&& self) {
 			auto& x = caster<FragmentC>(self).cref().c;
 			auto& y = caster<FragmentD>(self).cref().c;
@@ -106,7 +101,6 @@ namespace sample
 	struct Object5 : combine<Object3>::visibility_override<priv<FragmentA>> {};
 	static_assert(sizeof(Object5) == sizeof(Object3));
 
-#undef SELF_AS
 }
 
 using namespace sample;
@@ -143,7 +137,6 @@ int main() {
 #endif // TYPE_INFO_SAMPLE
 
 }
-
 ```
 
 a more realistic sample is provide in `sample_type_info.cpp`
