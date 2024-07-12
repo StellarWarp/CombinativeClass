@@ -181,7 +181,7 @@ namespace combinative
 		};
 
 //wait for C++26 variadic friend
-#define MAKE_FRIENDS_16(n)\
+#define _COMBINATIVE_MAKE_FRIENDS_16(n)\
 friend typename methods::template get<(n)*16+0>;\
 friend typename methods::template get<(n)*16+1>;\
 friend typename methods::template get<(n)*16+2>;\
@@ -199,16 +199,16 @@ friend typename methods::template get<(n)*16+13>;\
 friend typename methods::template get<(n)*16+14>;\
 friend typename methods::template get<(n)*16+15>;\
 
-#define MAKE_FRIENDS_32(n) MAKE_FRIENDS_16(n*2) MAKE_FRIENDS_16(n*2+1)
-#define MAKE_FRIENDS_64(n) MAKE_FRIENDS_32(n*2) MAKE_FRIENDS_32(n*2+1)
-#define MAKE_FRIENDS_128(n) MAKE_FRIENDS_64(n*2) MAKE_FRIENDS_64(n*2+1)
+#define _COMBINATIVE_MAKE_FRIENDS_32(n) _COMBINATIVE_MAKE_FRIENDS_16(n*2) _COMBINATIVE_MAKE_FRIENDS_16(n*2+1)
+#define _COMBINATIVE_MAKE_FRIENDS_64(n) _COMBINATIVE_MAKE_FRIENDS_32(n*2) _COMBINATIVE_MAKE_FRIENDS_32(n*2+1)
+#define _COMBINATIVE_MAKE_FRIENDS_128(n) _COMBINATIVE_MAKE_FRIENDS_64(n*2) _COMBINATIVE_MAKE_FRIENDS_64(n*2+1)
 
 		template <typename FunctionSet, typename... T>
 		struct MSC_EBO TestInherit : ValidInterfaceFrag<ControlledMultiInherit<T...>, FunctionSet>, ControlledMultiInherit<T...>
 		{
 		private:
 			using methods = TestInherit::method_list;
-			MAKE_FRIENDS_128(0);
+			_COMBINATIVE_MAKE_FRIENDS_128(0);
 		};
 
 		template<typename FunctionSets, typename MethodList>
@@ -245,13 +245,13 @@ friend typename methods::template get<(n)*16+15>;\
 
 		private:
 			using methods = InheritImpl::method_list;
-			MAKE_FRIENDS_128(0);
+			_COMBINATIVE_MAKE_FRIENDS_128(0);
 		};
 
-#undef MAKE_FRIENDS_16
-#undef MAKE_FRIENDS_32
-#undef MAKE_FRIENDS_64
-#undef MAKE_FRIENDS_128
+#undef _COMBINATIVE_MAKE_FRIENDS_16
+#undef _COMBINATIVE_MAKE_FRIENDS_32
+#undef _COMBINATIVE_MAKE_FRIENDS_64
+#undef _COMBINATIVE_MAKE_FRIENDS_128
 	}
 
 

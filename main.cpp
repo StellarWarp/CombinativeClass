@@ -39,9 +39,6 @@ struct Methods6 : impl_for<FragmentC, FragmentD> {
 	}
 };
 
-
-
-
 struct FuncSet1 : function_set<Methods1, Methods2, Methods3, Methods4, Methods5, Methods6> {};
 
 struct Object1 : combine<FuncSet1, pub<FragmentA>, FragmentB> {};
