@@ -11,13 +11,61 @@
 
 namespace combinative
 {
+	template<typename... T>
+	class caster : std::tuple<T&...>
+	{
+	public:
+		template<typename U>
+		caster(U& self) : std::tuple<T&...>(static_cast<T&>(self)...) {}
+		std::tuple<T&...>& ref() { return *this; }
+		std::tuple<const T&...> cref(){
+			return [this]<size_t... I>(std::index_sequence<I...>) {
+				return std::tuple<const T&...>{ std::get<I>(ref())... };
+			}(std::make_index_sequence<sizeof...(T)>());
+		}
+		std::tuple<T...> val() { 
+			return [this]<size_t... I>(std::index_sequence<I...>) {
+				return std::make_tuple(std::get<I>(ref())...); 
+			}(std::make_index_sequence<sizeof...(T)>());
+		}
+		template<size_t I>
+		decltype(auto) get() { return std::get<I>(ref()); }
+	};
+	template<typename T>
+	class caster<T>
+	{
+		T& ref_;
+	public:
+		template<typename U>
+		caster(U& self) : ref_{ static_cast<T&>(self) } {}
+		T& ref() { return ref_; }
+		const T& cref() { return ref_; }
+		T val() { return ref_; }
+	};
+}
+
+namespace std {
+	template <typename... T>
+	struct tuple_size<combinative::caster<T...>> : std::integral_constant<std::size_t, sizeof...(T)> {};
+
+	template <std::size_t Index, typename... T>
+	struct tuple_element<Index, combinative::caster<T...>> {
+		using type = typename std::tuple_element<Index, std::tuple<T&...>>::type;
+	};
+}
+
+namespace combinative
+{
 	template<typename T>
 	struct pub;
 	template<typename T>
 	struct priv;
 
+	struct combinative_object {};
+
 	namespace detail
 	{
+
 
 		template<typename... T>
 		struct MSC_EBO MultiInherit : T... {};
@@ -154,10 +202,22 @@ namespace combinative
 			using method_list = typename valid_method<T, new_list, type_list<Methods...>>::method_list;
 		};
 
-		template <typename Final>
-		struct ValidInterface : MultiInherit<typename valid_method<Final, type_list<>, typename Final::method_list>::method_list>
+		template<typename T>
+		struct tags_from_methods;
+		template<typename... Method>
+		struct tags_from_methods<type_list<Method...>>
 		{
-			using method_list = valid_method<Final, type_list<>, typename Final::method_list>::method_list;
+			using list = typename type_list<>::template cat<typename Method::method_tags...>;
+		};
+		template<typename MethodList>
+		using MethodInheritList = type_list<>::template cat<MethodList, typename tags_from_methods<MethodList>::list>;
+
+		template <typename Final,
+			typename MethodList = typename valid_method<Final, type_list<>, typename Final::method_list>::method_list
+		>
+		struct ValidInterface : MultiInherit<MethodInheritList<MethodList>>
+		{
+			using method_list = MethodList;
 		};
 
 		template <typename T, typename ValidList, typename Unverified>
@@ -174,10 +234,12 @@ namespace combinative
 			using new_list = std::conditional_t<is_valid, type_list<Valid..., Method>, type_list<Valid...>>;
 			using method_list = typename valid_method_frag<T, new_list, type_list<Methods...>>::method_list;
 		};
-		template <typename Final, typename FunctionSet>
-		struct ValidInterfaceFrag : MultiInherit<typename valid_method_frag<Final, type_list<>, typename FunctionSet::method_list>::method_list>
+		template <typename Final, typename FunctionSet,
+			typename MethodList = typename valid_method_frag<Final, type_list<>, typename FunctionSet::method_list>::method_list
+		>
+		struct ValidInterfaceFrag : MultiInherit<MethodInheritList<MethodList>>
 		{
-			using method_list = valid_method_frag<Final, type_list<>, typename FunctionSet::method_list>::method_list;
+			using method_list = MethodList;
 		};
 
 //wait for C++26 variadic friend
@@ -204,11 +266,20 @@ friend typename methods::template get<(n)*16+15>;\
 #define _COMBINATIVE_MAKE_FRIENDS_128(n) _COMBINATIVE_MAKE_FRIENDS_64(n*2) _COMBINATIVE_MAKE_FRIENDS_64(n*2+1)
 
 		template <typename FunctionSet, typename... T>
-		struct MSC_EBO TestInherit : ValidInterfaceFrag<ControlledMultiInherit<T...>, FunctionSet>, ControlledMultiInherit<T...>
+		struct MSC_EBO TestInherit : 
+			ValidInterfaceFrag<ControlledMultiInherit<T...>, FunctionSet>,
+			ControlledMultiInherit<T...>
 		{
+		protected:
 		private:
 			using methods = TestInherit::method_list;
 			_COMBINATIVE_MAKE_FRIENDS_128(0);
+
+			friend struct impl_for_utils;
+			template <typename... V>
+			friend class caster;
+			template <typename U>
+			U& as() { return static_cast<U&>(*this); }
 		};
 
 		template<typename FunctionSets, typename MethodList>
@@ -242,10 +313,16 @@ friend typename methods::template get<(n)*16+15>;\
 		{
 			using fragment_list = type_list<Fragment...>;
 			using function_sets = type_list<FunctionSet...>;
-
+		protected:
 		private:
 			using methods = InheritImpl::method_list;
 			_COMBINATIVE_MAKE_FRIENDS_128(0);
+
+			friend struct impl_for_utils;
+			template <typename... V>
+			friend class caster;
+			template <typename T>
+			T& as() { return static_cast<T&>(*this); }
 		};
 
 #undef _COMBINATIVE_MAKE_FRIENDS_16
@@ -459,9 +536,13 @@ friend typename methods::template get<(n)*16+15>;\
 		struct depends_on_all_impl;
 		template<typename Lambda>
 		struct custom_cond_impl;
-
 		template<typename... T>
-		class impl_for
+		struct tag_impl;
+
+		template<typename Conditons, typename Tags>
+		class impl_for;
+
+		struct impl_for_helper
 		{
 			template<typename Self, typename T>
 			static constexpr bool transform = std::is_base_of_v<T, Self>;
@@ -475,38 +556,58 @@ friend typename methods::template get<(n)*16+15>;\
 			static constexpr bool transform<Self, depends_on_all_impl<T...>> = (T::template __frag_cond__<Self> && ...);
 			template<typename Self, typename Lambda>
 			static constexpr bool transform<Self, custom_cond_impl<Lambda>> = true;
-
-			template <typename Self> static constexpr bool __frag_cond__ = (transform<Self, T> && ...);
+			template<typename Self, typename Tag>
+			static constexpr bool transform<Self, tag_impl<Tag>> = true;
 
 			template<typename Self, typename U>
 			static constexpr bool custom_cond_tmp = true;
 			template<typename Self, typename Lambda>
 			static constexpr bool custom_cond_tmp<Self, custom_cond_impl<Lambda>> = std::invocable<Lambda, Self>;
+		};
 
-			template <typename Self> using __cond__ = std::bool_constant<(custom_cond_tmp<Self, T> && ...)>;
+		struct impl_for_utils
+		{			
+		};
+
+		template<typename... T, typename... Tag>
+		class MSC_EBO impl_for<type_list<T...>, type_list<Tag...>>
+		{
+			template <typename Self> static constexpr bool __frag_cond__ = (impl_for_helper::transform<Self, T> && ...);
+
+			template <typename Self> using __cond__ = std::bool_constant<(impl_for_helper::custom_cond_tmp<Self, T> && ...)>;
 
 			template <typename T, typename ValidList, typename Unverified>
 			friend struct valid_method;
 			template <typename T, typename ValidList, typename Unverified>
 			friend struct valid_method_frag;
 
+			template<typename U>
+			using __ExtendCondition__ = impl_for<type_list<T..., U>, type_list<Tag...>>;
+
 		public:
+			using method_tags = type_list<Tag...>;
+
 			template<typename... U>
-			using exclude = impl_for<T..., exclude_impl<U...>>;
+			using exclude = __ExtendCondition__<exclude_impl<U...>>;
 			template<typename... U>
-			using any = impl_for<T..., any_impl<U...>>;
+			using any = __ExtendCondition__< any_impl<U...>>;
 			template<typename... U>
-			using depends_on_any = impl_for<T..., depends_on_any_impl<U...>>;
+			using depends_on_any = __ExtendCondition__<depends_on_any_impl<U...>>;
 			template<typename... U>
-			using depends_on = impl_for<T..., depends_on_all_impl<U...>>;
+			using depends_on = __ExtendCondition__<depends_on_all_impl<U...>>;
 			template<typename Lambda>
-			using custom_cond = impl_for<T..., custom_cond_impl<Lambda>>;
+			using custom_cond = __ExtendCondition__<custom_cond_impl<Lambda>>;
+			template<typename... U>
+			using tag = impl_for<type_list<T...>, type_list<Tag..., U...>>;
 		};
+
+
 	}
 
 
+
 	template<typename... T>
-	using impl_for = detail::impl_for<T...>;
+	using impl_for = detail::impl_for<type_list<T...>,type_list<>>;
 	template <typename... T>
 	using combine = detail::combine<T...>;
 

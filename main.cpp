@@ -1,61 +1,105 @@
 ﻿
-#include "combinative.h"
 #include "sample_type_info.h"
+#include "combinative.h"
 
-using namespace combinative;
+namespace sample
+{
+
+	using namespace combinative;
 
 #define SELF_AS(fragment_name) static_cast<fragment_name&>(self)
 
-struct FragmentA { int32_t a{}; };
-struct FragmentB { int32_t b{}; };
-struct FragmentC { int32_t c{}; };
-struct FragmentD { int32_t c{}; };
 
-struct Methods1 : impl_for<FragmentA, FragmentB>::exclude<FragmentC>{
-	auto func_ab(this auto && self) { return self.a + self.b; }
-	auto func_ab_1(this auto && self) { return self.a - self.b; }
-};
-struct Methods2 : impl_for<FragmentA, FragmentC>{
-	auto func_ac(this auto && self) { return self.a + self.c; }
-};
-struct Methods3 : impl_for<FragmentB, FragmentC>{
-	auto func_bc(this auto && self) { return self.b + self.c; }
-};
-struct Methods4 : impl_for<FragmentC>::exclude<FragmentA, FragmentB>{
-	auto func_c(this auto && self) { return SELF_AS(FragmentC).c; }
-};
-struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC>{
-	auto initializer(this auto && self, int32_t a, int32_t b, int32_t c) {
-		SELF_AS(FragmentA).a = a;
-		SELF_AS(FragmentB).b = b;
-		SELF_AS(FragmentC).c = c;
-	}
-};
-struct Methods6 : impl_for<FragmentC, FragmentD> {
-	auto func_cd(this auto&& self) { 
-		auto& x = SELF_AS(FragmentC).c;
-		auto& y = SELF_AS(FragmentD).c;
-		return x + y;
-	}
-};
+	struct FragmentA { int32_t a{}; };
+	struct FragmentB { int32_t b{}; };
+	struct FragmentC { int32_t c{}; };
+	struct FragmentD { int32_t c{}; };
 
-struct FuncSet1 : function_set<Methods1, Methods2, Methods3, Methods4, Methods5, Methods6> {};
+	struct Methods1 : impl_for<FragmentA, FragmentB>::exclude<FragmentC> {
+		auto func_ab(this auto&& self) { return self.a + self.b; }
+		auto func_ab_1(this auto&& self) { return self.a - self.b; }
+	};
+	struct Methods2 : impl_for<FragmentA, FragmentC> {
+		auto func_ac(this auto&& self) { return self.a + self.c; }
+	};
+	struct Methods3 : impl_for<FragmentB, FragmentC> {
+		auto func_bc(this auto&& self) { return self.b + self.c; }
+	};
+	struct Methods4 : impl_for<FragmentC>::exclude<FragmentA, FragmentB> {
+		auto func_c(this auto&& self) { return SELF_AS(FragmentC).c; }
+	};
 
-struct Object1 : combine<FuncSet1, pub<FragmentA>, FragmentB> {};
-static_assert(sizeof(Object1) == 2 * sizeof(int32_t));
+	struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC> {
+		auto initializer(this auto&& self, int32_t a, int32_t b, int32_t c) {
+			auto [fa, fb, fc] = caster< FragmentA, FragmentB, FragmentC >(self);
+			fa.a = a;
+			fb.b = b;
+			fc.c = c;
+		}
+		auto initializer_1(this auto&& self, int32_t a, int32_t b, int32_t c) {
+			auto [fa, fb, fc] = caster< FragmentA, FragmentB, FragmentC >(self).ref();//same but explicit
+			fa.a = a;
+			fb.b = b;
+			fc.c = c;
+		}
+		auto func_abc(this auto&& self) {
+			auto [fa, fb, fc] = caster< FragmentA, FragmentB, FragmentC >(self).cref();
+			return fa.a + fb.b + fc.c;
+		}
+		auto func_abc_copy(this auto&& self) {
+			auto [fa, fb, fc] = caster< FragmentA, FragmentB, FragmentC >(self).val();//copy
+			return std::forward_as_tuple(fa.a, fb.b, fc.c);
+		}
+	};
+	struct Methods6 : impl_for<FragmentC, FragmentD> {
+		auto func_cd_0(this auto&& self) {
+			auto& x = static_cast<FragmentC&>(self).c;
+			auto& y = static_cast<FragmentD&>(self).c;
+			return x + y;
+		}
+		auto func_cd(this auto&& self) {
+			auto& x = SELF_AS(FragmentC).c;
+			auto& y = SELF_AS(FragmentD).c;
+			return x + y;
+		}
+		auto func_cd_1(this auto&& self) {
+			auto& x = caster<FragmentC>(self).ref().c;
+			auto& y = caster<FragmentD>(self).ref().c;
+			return x + y;
+		}
+		auto func_cd_2(this auto&& self) {
+			auto [fc, fd] = caster<FragmentC, FragmentD>(self).ref();
+			return fc.c + fd.c;
+		}
+		//not recommended to use this is unfriendly to IDE
+		auto func_cd_3(this auto&& self) {
+			auto& x = self.as<FragmentC>().c;
+			auto& y = self.as<FragmentD>().c;
+			return x + y;
+		}
+	};
 
-struct Object2 : combine<FuncSet1, FragmentA, FragmentC> {};
-static_assert(sizeof(Object2) == 2 * sizeof(int32_t));
+	struct FuncSet1 : function_set<Methods1, Methods2, Methods3, Methods4, Methods5, Methods6> {};
 
-struct Object3 : combine<Object1, Object2> {};
-static_assert(sizeof(Object3) == 3 * sizeof(int32_t));
+	struct Object1 : combine<FuncSet1, pub<FragmentA>, FragmentB> {};
+	static_assert(sizeof(Object1) == 2 * sizeof(int32_t));
 
-struct Object4 : combine<Object3, FragmentD>::remove<FragmentA, FragmentB> {};
-static_assert(sizeof(Object4) == 2 * sizeof(int32_t));
+	struct Object2 : combine<FuncSet1, FragmentA, FragmentC> {};
+	static_assert(sizeof(Object2) == 2 * sizeof(int32_t));
 
-struct Object5 : combine<Object3>::visibility_override<priv<FragmentA>> {};
-static_assert(sizeof(Object5) == sizeof(Object3));
+	struct Object3 : combine<Object1, Object2> {};
+	static_assert(sizeof(Object3) == 3 * sizeof(int32_t));
 
+	struct Object4 : combine<Object3, FragmentD>::remove<FragmentA, FragmentB> {};
+	static_assert(sizeof(Object4) == 2 * sizeof(int32_t));
+
+	struct Object5 : combine<Object3>::visibility_override<priv<FragmentA>> {};
+	static_assert(sizeof(Object5) == sizeof(Object3));
+
+#undef SELF_AS
+}
+
+using namespace sample;
 
 int main() {
 	Object1 o1;
@@ -71,6 +115,8 @@ int main() {
 	o3.initializer(1, 2, 3);
 	o3.func_ac();
 	o3.func_bc();
+	o3.func_abc();
+	o3.func_abc_copy();
 
 	Object4 o4;
 	o4.func_c();
@@ -78,8 +124,12 @@ int main() {
 
 	Object5 o5;
 	using is_a_accessible = decltype([](auto t) requires requires { t.a; } {});
-	static_assert(std::invocable<is_a_accessible, Object3 > );
-	static_assert(!std::invocable<is_a_accessible, Object5 > );
+	static_assert(std::invocable<is_a_accessible, Object3 >);
+	static_assert(!std::invocable<is_a_accessible, Object5 >);
+
+
+#ifdef TYPE_INFO_SAMPLE
+	generic::sample_use();
+#endif // TYPE_INFO_SAMPLE
+
 }
-
-
