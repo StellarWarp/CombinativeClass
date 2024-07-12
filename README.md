@@ -6,6 +6,91 @@ this repos provides a template tool to combine data and implement method base on
 
 making multi-inheritance free from the virtual bases
 
+## Purpose
+
+As the name suggest, it's for combining data and method to form different classes.
+
+in the `type_info` sample , there is a `type_info` struct which contains the following fields
+
+```cpp
+struct type_info
+{
+	size_t size;
+	copy_constructor_ptr_t copy_constructor;
+	move_constructor_ptr_t move_constructor;
+	destructor_ptr_t destructor;
+	uint64_t hash;
+	const char* name;
+};
+```
+
+but the `type_info` is not allow to move and copy.
+
+thus a `type_index` is act as a warpper of `type_info` to referencing the `type_info` and provide some info access methods
+
+```cpp
+class type_index
+{
+	const type_info* m_info;
+public:
+	type_index(const type_info& info) : m_info(&info) {}
+	/* other methods to access info*/
+};
+```
+
+this casue a problem that if one want to access any info of a type, the access action requires an indirection
+
+you may wish that the hot properties can be inlinely cache in the `type_index`, in some cases which partial of a type's info is frequently visited, 
+
+```cpp
+class type_index_cache_hash
+{
+	const type_info* m_info;
+	size_t m_hash;
+};
+
+class type_index_cache_destructor
+{
+	const type_info* m_info;
+	size_t m_size;
+	destructor_ptr_t m_destructor;
+};
+//...and more
+```
+or it may only need to store one or two properties of the type
+```cpp
+class type_size_hash
+{
+	size_t m_size;
+	size_t m_hash;
+};
+//...and more
+```
+
+for each version adding to the project
+- all method related to the changing properties need to be rewrite
+- convertion between each version need to be add
+- binary operator between each version need to be add
+  
+those issues are making it hard to maintain
+
+
+
+The Combinative Class basically an extension of CRTP with following feature
+- combination :
+  - properties are divided into fragments
+  - combinative class is a combination of fragments and it's matched method
+  - combinative class can be the combination of combinative classes
+- access control : 
+  - fragment visibility defualt to be protected
+  - can be explicitly set by `pub` `prot` and `priv`
+  - friend declaration for CRTP parent is implied
+- method visibility friendly :
+  - methods that don't match it's requirement won't appear in the final class
+- macro free :
+  - zero exposed macro
+  
+
 ## Sample
 
 ```cpp
@@ -169,4 +254,4 @@ int main() {
 
 ```
 
-a more realistic sample is provide in `sample_type_info.cpp`
+a more realistic sample is provide in `sample_type_info.h`
