@@ -130,7 +130,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="sample_type_info.cpp" />
+    <ClInclude Include="sample_type_info.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="combinative.h" />

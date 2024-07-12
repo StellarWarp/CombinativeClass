@@ -14,7 +14,7 @@ namespace combinative
 
 	private:
 		template <size_t I, typename... Ts> struct get_helper;
-		template <> struct get_helper<0> {
+		template <size_t I> struct get_helper<I> {
 			using type = void;
 		};
 		template <typename U, typename... Us> struct get_helper<0, U, Us...> {

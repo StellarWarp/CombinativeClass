@@ -16,9 +16,6 @@ namespace combinative
 	template<typename T>
 	struct priv;
 
-	template <typename T>
-	struct method;
-
 	namespace detail
 	{
 
@@ -183,12 +180,35 @@ namespace combinative
 			using method_list = valid_method_frag<Final, type_list<>, typename FunctionSet::method_list>::method_list;
 		};
 
+//wait for C++26 variadic friend
+#define MAKE_FRIENDS_16(n)\
+friend typename methods::template get<(n)*16+0>;\
+friend typename methods::template get<(n)*16+1>;\
+friend typename methods::template get<(n)*16+2>;\
+friend typename methods::template get<(n)*16+3>;\
+friend typename methods::template get<(n)*16+4>;\
+friend typename methods::template get<(n)*16+5>;\
+friend typename methods::template get<(n)*16+6>;\
+friend typename methods::template get<(n)*16+7>;\
+friend typename methods::template get<(n)*16+8>;\
+friend typename methods::template get<(n)*16+9>;\
+friend typename methods::template get<(n)*16+10>;\
+friend typename methods::template get<(n)*16+11>;\
+friend typename methods::template get<(n)*16+12>;\
+friend typename methods::template get<(n)*16+13>;\
+friend typename methods::template get<(n)*16+14>;\
+friend typename methods::template get<(n)*16+15>;\
+
+#define MAKE_FRIENDS_32(n) MAKE_FRIENDS_16(n*2) MAKE_FRIENDS_16(n*2+1)
+#define MAKE_FRIENDS_64(n) MAKE_FRIENDS_32(n*2) MAKE_FRIENDS_32(n*2+1)
+#define MAKE_FRIENDS_128(n) MAKE_FRIENDS_64(n*2) MAKE_FRIENDS_64(n*2+1)
 
 		template <typename FunctionSet, typename... T>
 		struct MSC_EBO TestInherit : ValidInterfaceFrag<ControlledMultiInherit<T...>, FunctionSet>, ControlledMultiInherit<T...>
 		{
-			template <typename T>
-			friend struct method;
+		private:
+			using methods = TestInherit::method_list;
+			MAKE_FRIENDS_128(0);
 		};
 
 		template<typename FunctionSets, typename MethodList>
@@ -222,17 +242,21 @@ namespace combinative
 		{
 			using fragment_list = type_list<Fragment...>;
 			using function_sets = type_list<FunctionSet...>;
-			using methods = FunctionSetCat<FunctionSet...>;
 
-			template <typename T>
-			friend struct method;
+		private:
+			using methods = InheritImpl::method_list;
+			MAKE_FRIENDS_128(0);
 		};
+
+#undef MAKE_FRIENDS_16
+#undef MAKE_FRIENDS_32
+#undef MAKE_FRIENDS_64
+#undef MAKE_FRIENDS_128
 	}
 
 
-
 	template <typename... T>
-	struct function_set : detail::function_set_impl<method<T>...> {};
+	struct function_set : detail::function_set_impl<T...> {};
 
 	namespace detail {
 
@@ -446,9 +470,9 @@ namespace combinative
 			template<typename Self, typename... T>
 			static constexpr bool transform<Self, exclude_impl<T...>> = (!std::is_base_of_v<T, Self> && ...);
 			template<typename Self, typename... T>
-			static constexpr bool transform<Self, depends_on_any_impl<T...>> = (method<T>::template __frag_cond__<Self> || ...);
+			static constexpr bool transform<Self, depends_on_any_impl<T...>> = (T::template __frag_cond__<Self> || ...);
 			template<typename Self, typename... T>
-			static constexpr bool transform<Self, depends_on_all_impl<T...>> = (method<T>::template __frag_cond__<Self> && ...);
+			static constexpr bool transform<Self, depends_on_all_impl<T...>> = (T::template __frag_cond__<Self> && ...);
 			template<typename Self, typename Lambda>
 			static constexpr bool transform<Self, custom_cond_impl<Lambda>> = true;
 
@@ -487,7 +511,6 @@ namespace combinative
 	using combine = detail::combine<T...>;
 
 
-#define COMBINATIVE_METHOD_GROUP(name)template <> struct combinative::method<struct name>
 
 }
 

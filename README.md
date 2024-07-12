@@ -13,7 +13,6 @@ making multi-inheritance free from the virtual bases
 
 using namespace combinative;
 
-#define METHOD_GROUP COMBINATIVE_METHOD_GROUP
 #define SELF_AS(fragment_name) static_cast<fragment_name&>(self)
 
 struct FragmentA { int32_t a{}; };
@@ -21,20 +20,20 @@ struct FragmentB { int32_t b{}; };
 struct FragmentC { int32_t c{}; };
 struct FragmentD { int32_t d{}; };
 
-METHOD_GROUP(Methods1) : impl_for<FragmentA, FragmentB>::exclude<FragmentC>{
+struct Methods1 : impl_for<FragmentA, FragmentB>::exclude<FragmentC>{
 	auto func_ab(this auto && self) { return self.a + self.b; }
 	auto func_ab_1(this auto && self) { return self.a - self.b; }
 };
-METHOD_GROUP(Methods2) : impl_for<FragmentA, FragmentC>{
+struct Methods2 : impl_for<FragmentA, FragmentC>{
 	auto func_ac(this auto && self) { return self.a + self.c; }
 };
-METHOD_GROUP(Methods3) : impl_for<FragmentB, FragmentC>{
+struct Methods3 : impl_for<FragmentB, FragmentC>{
 	auto func_bc(this auto && self) { return self.b + self.c; }
 };
-METHOD_GROUP(Methods4) : impl_for<FragmentC>::exclude<FragmentA, FragmentB>{
+struct Methods4 : impl_for<FragmentC>::exclude<FragmentA, FragmentB>{
 	auto func_c(this auto && self) { return self.c; }
 };
-METHOD_GROUP(Methods5) : impl_for<FragmentA, FragmentB, FragmentC>{
+struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC>{
 	auto initializer(this auto && self, int32_t a, int32_t b, int32_t c) {
 		SELF_AS(FragmentA).a = a;
 		SELF_AS(FragmentB).b = b;
@@ -59,9 +58,7 @@ struct Object5 : combine<Object4>::visibility_override<pub<FragmentD>> {};
 static_assert(sizeof(Object5) == sizeof(Object4));
 
 
-
 int main() {
-
 	Object1 o1;
 	o1.a = 1;
 	o1.func_ab();
@@ -82,6 +79,9 @@ int main() {
 	Object5 o5;
 	o5.d;
 }
+
+
+
 ```
 
 more sample is provide in source code

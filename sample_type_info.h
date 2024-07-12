@@ -126,113 +126,105 @@ namespace generic
 		struct move_constructor { move_constructor_ptr_t move_constructor_; };
 		struct destructor_frag { destructor_ptr_t destructor_; };
 	}
-}
 
+#define F info_frag
 
-#define MS COMBINATIVE_METHOD_GROUP
-#define F generic::info_frag
+	struct type_index_size : impl_for<info_frag::index>::exclude<info_frag::size_frag> {
+		size_t size(this auto&& self) { return self.info_->size; }
+	};
+	struct type_cache_size : impl_for<info_frag::size_frag> {
+		size_t size(this auto&& self) { return self.size_; }
+	};
 
-MS(type_index_size) : impl_for<F::index>::exclude<F::size_frag>{
-	size_t size(this auto && self) { return self.info_->size; }
-};
-MS(type_cache_size) : impl_for<F::size_frag>{
-	size_t size(this auto && self) { return self.size_; }
-};
+	struct type_index_hash : impl_for<info_frag::index>::exclude<info_frag::hash_frag> {
+		uint64_t hash(this auto&& self) { return self.info_->hash; }
+	};
+	struct type_cache_hash : impl_for<info_frag::hash_frag> {
+		uint64_t hash(this auto&& self) { return self.hash_; }
+	};
+	struct type_index_name : impl_for<info_frag::index>::exclude<info_frag::name_frag> {
+		const char* name(this auto&& self) { return self.info_->name; }
+	};
+	struct type_cache_name : impl_for<info_frag::name_frag> {
+		const char* name(this auto&& self) { return self.name_; }
+	};
 
-MS(type_index_hash) : impl_for<F::index>::exclude<F::hash_frag>{
-	uint64_t hash(this auto && self) { return self.info_->hash; }
-};
-MS(type_cache_hash) : impl_for<F::hash_frag>{
-	uint64_t hash(this auto && self) { return self.hash_; }
-};
-MS(type_index_name) : impl_for<F::index>::exclude<F::name_frag>{
-	const char* name(this auto && self) { return self.info_->name; }
-};
-MS(type_cache_name) : impl_for<F::name_frag>{
-	const char* name(this auto && self) { return self.name_; }
-};
+	struct type_index_copy_constructor_ptr : impl_for<info_frag::index>::exclude<info_frag::copy_constructor> {
+	protected:
+		auto copy_constructor_ptr(this auto&& self) { return self.info_->copy_constructor; }
+	};
+	struct type_index_move_constructor_ptr : impl_for<info_frag::index>::exclude<info_frag::move_constructor> {
+	protected:
+		auto move_constructor_ptr(this auto&& self) { return self.info_->move_constructor; }
+	};
+	struct type_index_destructor_ptr : impl_for<info_frag::index>::exclude<info_frag::destructor_frag> {
+	protected:
+		auto destructor_ptr(this auto&& self) { return self.info_->destructor; }
+	};
+	struct type_cache_copy_constructor_ptr : impl_for<info_frag::copy_constructor> {
+	protected:
+		auto copy_constructor_ptr(this auto&& self) { return self.copy_constructor_; }
+	};
+	struct type_cache_move_constructor_ptr : impl_for<info_frag::move_constructor> {
+	protected:
+		auto move_constructor_ptr(this auto&& self) { return self.move_constructor_; }
+	};
+	struct type_cache_destructor_ptr : impl_for<info_frag::destructor_frag> {
+	protected:
+		auto destructor_ptr(this auto&& self) { return self.destructor_; }
+	};
 
-MS(type_index_copy_constructor_ptr) : impl_for<F::index>::exclude<F::copy_constructor>{
-protected:
-	auto copy_constructor_ptr(this auto && self) { return self.info_->copy_constructor; }
-};
-MS(type_index_move_constructor_ptr) : impl_for<F::index>::exclude<F::move_constructor>{
-protected:
-	auto move_constructor_ptr(this auto && self) { return self.info_->move_constructor; }
-};
-MS(type_index_destructor_ptr) : impl_for<F::index>::exclude<F::destructor_frag>{
-protected:
-	auto destructor_ptr(this auto && self) { return self.info_->destructor; }
-};
-MS(type_cache_copy_constructor_ptr) : impl_for<F::copy_constructor>{
-protected:
-	auto copy_constructor_ptr(this auto && self) { return self.copy_constructor_; }
-};
-MS(type_cache_move_constructor_ptr) : impl_for<F::move_constructor>{
-protected:
-	auto move_constructor_ptr(this auto && self) { return self.move_constructor_; }
-};
-MS(type_cache_destructor_ptr) : impl_for<F::destructor_frag>{
-protected:
-	auto destructor_ptr(this auto && self) { return self.destructor_; }
-};
+	struct type_empty : impl_for<>::any<info_frag::index, info_frag::size_frag> {
+		bool is_empty(this auto&& self) { return self.size() == 0; }
+	};
 
-MS(type_empty) : impl_for<>::any<F::index, F::size_frag>{
-	bool is_empty(this auto && self) { return self.size() == 0; }
-};
-
-MS(type_copy_constructor) : impl_for<>/*::custom_cond <decltype([](auto t) requires requires { t.copy_constructor_ptr(); } {}) >*/
-{
-	template <typename T>
-	using __cond__ = std::bool_constant < requires(T t) { t.copy_constructor_ptr(); } >;
-	void* copy_constructor(this auto && self, void* dest, const void* src) { return self.copy_constructor_ptr()(dest, src); }
-};
-MS(type_move_constructor) : impl_for<>/*::custom_cond <decltype([](auto t) requires requires { t.move_constructor_ptr(); } {}) >*/
-{
-	template <typename T>
-	using __cond__ = std::bool_constant < requires(T t) { t.move_constructor_ptr(); } > ;
-	void* move_constructor(this auto && self, void* dest, void* src) { return self.move_constructor_ptr()(dest, src); }
-	bool is_reallocable(this auto && self)
+	struct type_copy_constructor : impl_for<>/*::custom_cond <decltype([](auto t) requires requires { t.copy_constructor_ptr(); } {}) >*/
 	{
-		return self.move_constructor_ptr() == nullptr;
-	}
-};
-
-MS(type_destructor) : impl_for<>
-{
-	template <typename T> 
-	using __cond__ = std::bool_constant < requires(T t) { t.destructor_ptr(); t.size(); } > ;
-	void destructor(this auto && self, void* dest) { self.destructor_ptr()(dest); }
-	void destructor(this auto && self, void* addr, size_t count) {
-		if (self.destructor_ptr() == nullptr)
-			return;
-		for (size_t i = 0; i < count; i++)
+		template <typename T>
+		using __cond__ = std::bool_constant < requires(T t) { t.copy_constructor_ptr(); } > ;
+		void* copy_constructor(this auto&& self, void* dest, const void* src) { return self.copy_constructor_ptr()(dest, src); }
+	};
+	struct type_move_constructor : impl_for<>/*::custom_cond <decltype([](auto t) requires requires { t.move_constructor_ptr(); } {}) >*/
+	{
+		template <typename T>
+		using __cond__ = std::bool_constant < requires(T t) { t.move_constructor_ptr(); } > ;
+		void* move_constructor(this auto&& self, void* dest, void* src) { return self.move_constructor_ptr()(dest, src); }
+		bool is_reallocable(this auto&& self)
 		{
-			self.destructor_ptr()(addr);
-			addr = (uint8_t*)addr + self.size();
+			return self.move_constructor_ptr() == nullptr;
 		}
-	}
-	void destructor(this auto && self, void* begin, void* end)
+	};
+
+	struct type_destructor : impl_for<>
 	{
-		if (self.destructor_ptr() == nullptr)
-			return;
-		for (; begin != end; (uint8_t*)begin + self.size())
+		template <typename T>
+		using __cond__ = std::bool_constant < requires(T t) { t.destructor_ptr(); t.size(); } > ;
+		void destructor(this auto&& self, void* dest) { self.destructor_ptr()(dest); }
+		void destructor(this auto&& self, void* addr, size_t count) {
+			if (self.destructor_ptr() == nullptr)
+				return;
+			for (size_t i = 0; i < count; i++)
+			{
+				self.destructor_ptr()(addr);
+				addr = (uint8_t*)addr + self.size();
+			}
+		}
+		void destructor(this auto&& self, void* begin, void* end)
 		{
-			self.destructor_ptr()(begin);
+			if (self.destructor_ptr() == nullptr)
+				return;
+			for (; begin != end; (uint8_t*)begin + self.size())
+			{
+				self.destructor_ptr()(begin);
+			}
 		}
-	}
-	bool is_trivially_destructible(this auto && self)
-	{
-		return self.destructor_ptr() == nullptr;
-	}
-};
+		bool is_trivially_destructible(this auto&& self)
+		{
+			return self.destructor_ptr() == nullptr;
+		}
+	};
 
 
-#undef F
-#undef MS
-
-namespace generic
-{
 	using type_info_funcset = function_set<
 		type_index_size, type_cache_size,
 		type_index_hash, type_cache_hash,
