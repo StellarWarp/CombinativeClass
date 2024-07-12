@@ -73,12 +73,12 @@ namespace sample
 			return x + y;
 		}
 		auto func_cd_1(this auto&& self) {
-			auto& x = caster<FragmentC>(self).ref().c;
-			auto& y = caster<FragmentD>(self).ref().c;
+			auto& x = caster<FragmentC>(self).cref().c;
+			auto& y = caster<FragmentD>(self).cref().c;
 			return x + y;
 		}
 		auto func_cd_2(this auto&& self) {
-			auto [fc, fd] = caster<FragmentC, FragmentD>(self).ref();
+			auto [fc, fd] = caster<FragmentC, FragmentD>(self).cref();
 			return fc.c + fd.c;
 		}
 		//not recommended to use this is unfriendly to IDE
@@ -143,7 +143,6 @@ int main() {
 #endif // TYPE_INFO_SAMPLE
 
 }
-
 
 ```
 
