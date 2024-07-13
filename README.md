@@ -180,7 +180,7 @@ namespace sample
 			auto& y = caster<FragmentD>(self).cref().c;
 			return x + y;
 		}
-		//this is unfriendly to intellisense
+		//this is unfriendly to properties tipping
 		auto func_cd_4(this auto&& self) {
 			auto& x = self.as<FragmentC>().c;
 			auto& y = self.as<FragmentD>().c;
