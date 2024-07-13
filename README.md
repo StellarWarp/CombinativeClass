@@ -1,10 +1,6 @@
 # Combinative Class
 
-Utilizing C++23 feature for a better CRTP based implementation 
-
-this repos provides a template tool to combine data and implement method base on the combination.
-
-making multi-inheritance free from the virtual bases
+The Combinative Class is a tiny tool that leverages C++23 features to provide an improved Curiously Recurring Template Pattern (CRTP) based implementation. This utility enables the combination of data and the implementation of methods based on these combinations, offering a clean and powerful approach to multiple inheritance without relying on virtual bases.
 
 ## Quick Sample
 
