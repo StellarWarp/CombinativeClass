@@ -274,9 +274,9 @@ friend typename methods::template get<(n)*16+13>;\
 friend typename methods::template get<(n)*16+14>;\
 friend typename methods::template get<(n)*16+15>;\
 
-#define _COMBINATIVE_MAKE_FRIENDS_32(n) _COMBINATIVE_MAKE_FRIENDS_16(n*2) _COMBINATIVE_MAKE_FRIENDS_16(n*2+1)
-#define _COMBINATIVE_MAKE_FRIENDS_64(n) _COMBINATIVE_MAKE_FRIENDS_32(n*2) _COMBINATIVE_MAKE_FRIENDS_32(n*2+1)
-#define _COMBINATIVE_MAKE_FRIENDS_128(n) _COMBINATIVE_MAKE_FRIENDS_64(n*2) _COMBINATIVE_MAKE_FRIENDS_64(n*2+1)
+#define _COMBINATIVE_MAKE_FRIENDS_32(n) _COMBINATIVE_MAKE_FRIENDS_16((n)*2) _COMBINATIVE_MAKE_FRIENDS_16((n)*2+1)
+#define _COMBINATIVE_MAKE_FRIENDS_64(n) _COMBINATIVE_MAKE_FRIENDS_32((n)*2) _COMBINATIVE_MAKE_FRIENDS_32((n)*2+1)
+#define _COMBINATIVE_MAKE_FRIENDS_128(n) _COMBINATIVE_MAKE_FRIENDS_64((n)*2) _COMBINATIVE_MAKE_FRIENDS_64((n)*2+1)
 
 		template <typename FunctionSet, typename... T>
 		struct MSC_EBO TestInherit :
@@ -408,7 +408,7 @@ friend typename methods::template get<(n)*16+15>;\
 		{
 			template<typename Info>
 			struct is_same_fragment : std::is_same<typename Info::type, typename U::type> {};
-			static constexpr size_t index = type_list<Infos...>::template find_first<is_same_fragment>;
+			static constexpr int index = type_list<Infos...>::template find_first<is_same_fragment>;
 			using new_list = fragment_replace<type_list<Infos...>, index, U>::type;
 			using type = mega_frag_idents_impl<type_list<Unsolve...>, new_list>::type;
 		};
