@@ -23,7 +23,7 @@ namespace sample
 		auto func_bc(this auto&& self) { return self.b + self.c; }
 	};
 	struct Methods4 : impl_for<FragmentC>::exclude<FragmentA, FragmentB> {
-		auto func_c(this auto&& self) { return self.as<FragmentC>().c; }
+		auto func_c(this caster<FragmentC> self) { return self.cref().c; }
 	};
 
 	struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC> {
@@ -40,12 +40,15 @@ namespace sample
 			fc.c = c;
 		}
 		auto func_abc(this auto&& self) {
-			auto [fa, fb, fc] = caster< FragmentA, FragmentB, FragmentC >(self).cref();
+			return self.a + self.b + self.c;
+		}
+		auto func_abc_1(this caster<FragmentA, FragmentB, FragmentC> self) { //embedded caster
+			auto [fa, fb, fc] = self.cref();
 			return fa.a + fb.b + fc.c;
 		}
-		auto func_abc_copy(this auto&& self) {
-			auto [fa, fb, fc] = caster< FragmentA, FragmentB, FragmentC >(self).val();//copy
-			return std::forward_as_tuple(fa.a, fb.b, fc.c);
+		auto func_abc_copy(this caster< FragmentA, FragmentB, FragmentC > self) {
+			auto [fa, fb, fc] = self.val();//copy
+			return std::make_tuple(fa.a, fb.b, fc.c);
 		}
 	};
 	struct Methods6 : impl_for<FragmentC, FragmentD> {
@@ -60,14 +63,14 @@ namespace sample
 
 #undef self_as
 
-		auto func_cd_1(this auto&& self) {
+		auto func_cd_1(this caster<FragmentC, FragmentD> self) {
+			auto [fc, fd] = self.cref();
+			return fc.c + fd.c;
+		}
+		auto func_cd_2(this auto&& self) {
 			auto& x = caster<FragmentC>(self).cref().c;
 			auto& y = caster<FragmentD>(self).cref().c;
 			return x + y;
-		}
-		auto func_cd_2(this auto&& self) {
-			auto [fc, fd] = caster<FragmentC, FragmentD>(self).cref();
-			return fc.c + fd.c;
 		}
 		//this is unfriendly to intellisense
 		auto func_cd_3(this auto&& self) {
@@ -136,11 +139,14 @@ int main() {
 	o3.func_ac();
 	o3.func_bc();
 	o3.func_abc();
+	o3.func_abc_1();
 	o3.func_abc_copy();
 
 	Object4 o4;
 	o4.func_c();
 	o4.func_cd();
+	o4.func_cd_1();
+	
 
 	Object5 o5;
 	using is_a_accessible = decltype([](auto t) requires requires { t.a; } {});
