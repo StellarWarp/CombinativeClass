@@ -16,7 +16,7 @@ namespace combinative
 	{
 	public:
 		template<typename U>
-		caster(U& self) : std::tuple<T&...>(static_cast<T&>(self)...) {}
+		caster(U& self) : std::tuple<T&...>(self.template as<T>()...) {}
 		std::tuple<T&...>& ref() { return *this; }
 		std::tuple<const T&...> cref() {
 			return[this]<size_t... I>(std::index_sequence<I...>) {
@@ -37,22 +37,23 @@ namespace combinative
 		T& ref_;
 	public:
 		template<typename U>
-		caster(U& self) : ref_{ static_cast<T&>(self) } {}
+		caster(U& self) : ref_{ self.template as<T>() } {}
 		T& ref() { return ref_; }
 		const T& cref() { return ref_; }
 		T val() { return ref_; }
 	};
+
 }
 
-namespace std {
-	template <typename... T>
-	struct tuple_size<combinative::caster<T...>> : std::integral_constant<std::size_t, sizeof...(T)> {};
-
-	template <std::size_t Index, typename... T>
-	struct tuple_element<Index, combinative::caster<T...>> {
-		using type = typename std::tuple_element<Index, std::tuple<T&...>>::type;
-	};
-}
+//namespace std {
+//	template <typename... T>
+//	struct tuple_size<combinative::caster<T...>> : std::integral_constant<std::size_t, sizeof...(T)> {};
+//
+//	template <std::size_t Index, typename... T>
+//	struct tuple_element<Index, combinative::caster<T...>> {
+//		using type = typename std::tuple_element<Index, std::tuple<T&...>>::type;
+//	};
+//}
 
 namespace combinative
 {
@@ -283,15 +284,15 @@ friend typename methods::template get<(n)*16+15>;\
 			ValidInterfaceFrag<ControlledMultiInherit<T...>, FunctionSet>,
 			ControlledMultiInherit<T...>
 		{
-		protected:
+            template <typename U>
+            U& as() { return *static_cast<U*>(this); }
 		private:
 			using methods = TestInherit::method_list;
 			_COMBINATIVE_MAKE_FRIENDS_128(0);
 
 			template <typename... V>
 			friend class caster;
-			template <typename U>
-			U& as() { return static_cast<U&>(*this); }
+
 		};
 
 		template<typename FunctionSets, typename MethodList>
@@ -325,16 +326,18 @@ friend typename methods::template get<(n)*16+15>;\
 		{
 			using fragment_list = type_list<Fragment...>;
 			using function_sets = type_list<FunctionSet...>;
-		protected:
+
+            template <typename T>
+            T& as() { return *static_cast<T*>(this); }
+
+        protected:
 		private:
 			using methods = InheritImpl::method_list;
 			_COMBINATIVE_MAKE_FRIENDS_128(0);
 
 			template <typename... V>
 			friend class caster;
-			template <typename T>
-			T& as() { return static_cast<T&>(*this); }
-		};
+        };
 
 #undef _COMBINATIVE_MAKE_FRIENDS_16
 #undef _COMBINATIVE_MAKE_FRIENDS_32
@@ -601,6 +604,43 @@ friend typename methods::template get<(n)*16+15>;\
 			static constexpr bool custom_cond_tmp = true;
 			template<typename Self, typename Lambda>
 			static constexpr bool custom_cond_tmp<Self, custom_cond_impl<Lambda>> = std::invocable<Lambda, Self>;
+
+            template<typename,typename>
+            struct access_list_helper;
+            template<typename T>
+            static constexpr bool is_access_fragment = true;
+            template<typename... T>
+            static constexpr bool is_access_fragment<any_impl<T...>> = false;
+            template<typename... T>
+            static constexpr bool is_access_fragment<exclude_impl<T...>> = false;
+            template<typename... T>
+            static constexpr bool is_access_fragment<depends_on_any_impl<T...>> = false;
+            template<typename... T>
+            static constexpr bool is_access_fragment<depends_on_all_impl<T...>> = false;
+            template<typename Lambda>
+            static constexpr bool is_access_fragment<custom_cond_impl<Lambda>> = false;
+            template<typename Tag>
+            static constexpr bool is_access_fragment<tag_impl<Tag>> = false;
+            template<typename... Access>
+            struct access_list_helper<type_list<>,type_list<Access...>>{
+                using list = type_list<Access...>;
+            };
+            template<typename U,typename... Unsolve,typename... Access> requires is_access_fragment<U>
+            struct access_list_helper<type_list<U,Unsolve...>,type_list<Access...>>{
+                 using list = access_list_helper<type_list<Unsolve...>,type_list<Access...,U>>::list;
+            };
+            template<typename U,typename... Unsolve,typename... Access> requires (!is_access_fragment<U>)
+            struct access_list_helper<type_list<U,Unsolve...>,type_list<Access...>>{
+                using list = access_list_helper<type_list<Unsolve...>,type_list<Access...>>::list;
+            };
+            template<typename T>
+            struct access_list_impl;
+            template<typename... T>
+            struct access_list_impl<type_list<T...>>{
+                using type = caster<T...>;
+            };
+            template<typename... T>
+            using access_list = access_list_impl<typename access_list_helper<type_list<T...>,type_list<>>::list>::type;
 		};
 
 
@@ -619,7 +659,9 @@ friend typename methods::template get<(n)*16+15>;\
 			template<typename U>
 			using __ExtendCondition__ = impl_for<type_list<T..., U>, type_list<Tag...>>;
 
-		public:
+        protected:
+            using access_list = impl_for_helper::access_list<T...>;
+        public:
 			using method_tags = type_list<Tag...>;
 
 			template<typename... U>

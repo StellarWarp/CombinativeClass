@@ -2,171 +2,177 @@
 #include "sample_type_info.h"
 #include "combinative.h"
 
-namespace sample
-{
+namespace sample {
 
-	using namespace combinative;
+    using namespace combinative;
 
-	struct FragmentA { int32_t a{}; };
-	struct FragmentB { int32_t b{}; };
-	struct FragmentC { int32_t c{}; };
-	struct FragmentD { int32_t c{}; };
+    struct FragmentA {
+        int32_t a{};
+    };
+    struct FragmentB {
+        int32_t b{};
+    };
+    struct FragmentC {
+        int32_t c{};
+    };
+    struct FragmentD {
+        int32_t c{};
+    };
 
-	struct Methods1 : impl_for<FragmentA, FragmentB>::exclude<FragmentC> {
-		auto func_ab(this auto&& self) { return self.a + self.b; }
-		auto func_ab_1(this auto&& self) { return self.a - self.b; }
-	};
-	struct Methods2 : impl_for<FragmentA, FragmentC> {
-		auto func_ac(this auto&& self) { return self.a + self.c; }
-	};
-	struct Methods3 : impl_for<FragmentB, FragmentC> {
-		auto func_bc(this auto&& self) { return self.b + self.c; }
-	};
-	struct Methods4 : impl_for<FragmentC>::exclude<FragmentA, FragmentB> {
-		auto func_c(this auto&& self) { return self.as<FragmentC>().c; }
-		auto func_c_1(this caster<FragmentC> self) { return self.cref().c; }
-	};
+    struct Methods1 : impl_for<FragmentA, FragmentB>::exclude<FragmentC> {
+        auto Auto_AB_noC(this auto &&self) { return self.a + self.b; }
+    };
 
-	struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC> {
-		auto initializer(this auto&& self, int32_t a, int32_t b, int32_t c) {
-			auto [fa, fb, fc] = caster< FragmentA, FragmentB, FragmentC >(self);
-			fa.a = a;
-			fb.b = b;
-			fc.c = c;
-		}
-		auto initializer_1(this auto&& self, int32_t a, int32_t b, int32_t c) {
-			auto [fa, fb, fc] = caster< FragmentA, FragmentB, FragmentC >(self).ref();//same but explicit
-			fa.a = a;
-			fb.b = b;
-			fc.c = c;
-		}
-		auto func_abc(this auto&& self) {
-			return self.a + self.b + self.c;
-		}
-		//note that this cause a method tipping problem in intellisense 
-		//as it didn't consider caster as a friend class
-		auto func_abc_1(this caster<FragmentA, FragmentB, FragmentC> self) { //embedded caster
-			auto [fa, fb, fc] = self.cref();
-			return fa.a + fb.b + fc.c;
-		}
-		auto func_abc_copy(this caster< FragmentA, FragmentB, FragmentC > self) {
-			auto [fa, fb, fc] = self.val();//copy
-			return std::make_tuple(fa.a, fb.b, fc.c);
-		}
-	};
-	struct Methods6 : impl_for<FragmentC, FragmentD> {
+    struct Methods2 : impl_for<FragmentA, FragmentC> {
+        auto Auto_AC(this auto &&self) { return self.a + self.c; }
+    };
 
-#define self_as(fragment_name) static_cast<fragment_name&>(self)
+    struct Methods3 : impl_for<FragmentB, FragmentC> {
+        auto Auto_BC(this auto &&self) { return self.b + self.c; }
+    };
 
-		auto func_cd(this auto&& self) {
-			auto& x = self_as(FragmentC).c;
-			auto& y = self_as(FragmentD).c;
-			return x + y;
-		}
+    struct SingleFragmentAccess : impl_for<FragmentC>::exclude<FragmentA, FragmentB> {
+        auto TemplateCast_C_noAB(this auto &&self) { return self.as<FragmentC>().c; }
+        auto EmbeddedCaster_C_noAB(this access_list self) { return self.cref().c; }
+    };
 
-#undef self_as
-		auto func_cd_1(this auto&& self) {
-            auto [fc, fd] = caster<FragmentC, FragmentD>(self).cref();
+    struct MultiFragmentAccess : impl_for<FragmentA, FragmentB, FragmentC> {
+        auto Setter_ABC(this access_list self, int32_t a, int32_t b, int32_t c) {
+            auto [fa, fb, fc] = self.ref();
+            fa.a = a;
+            fb.b = b;
+            fc.c = c;
+        }
+
+        auto Auto_ABC(this auto &&self) {
+            return self.a + self.b + self.c;
+        }
+
+        auto EmbeddedTupleCaster_ABC(this access_list self) { //embedded caster
+            auto [fa, fb, fc] = self.cref();
+            return fa.a + fb.b + fc.c;
+        }
+
+        auto FragmentCopy_ABC(this access_list self) {
+            auto [fa, fb, fc] = self.val();//copy
+            return std::make_tuple(fa.a, fb.b, fc.c);
+        }
+    };
+
+    struct PropertiesConflict : impl_for<FragmentC, FragmentD> {
+        auto EmbeddedTupleCaster_CD(this access_list self) {
+            auto [fc, fd] = self.cref();
             return fc.c + fd.c;
-		}
-		auto func_cd_2(this caster<FragmentC, FragmentD> self) {
-			auto [fc, fd] = self.cref();
-			return fc.c + fd.c;
-		}
-		auto func_cd_3(this auto&& self) {
-			auto& x = caster<FragmentC>(self).cref().c;
-			auto& y = caster<FragmentD>(self).cref().c;
-			return x + y;
-		}
-		//this is unfriendly to properties tipping
-		auto func_cd_4(this auto&& self) {
-			auto& x = self.as<FragmentC>().c;
-			auto& y = self.as<FragmentD>().c;
-			return x + y;
-		}
-	};
+        }
+        auto StaticCast_CD(this auto &&self) {
+            auto &x = static_cast<FragmentC&>(self).c;//u may define a marco to simplify this cast
+            auto &y = static_cast<FragmentD&>(self).c;
+            return x + y;
+        }
+        auto Caster_CD(this auto &&self) {
+            auto &x = caster<FragmentC>(self).cref().c;
+            auto &y = caster<FragmentD>(self).cref().c;
+            return x + y;
+        }
+        auto TemplateCast_CD(this auto &&self) {
+            auto &x = self.as<FragmentC>().c;//this is unfriendly to properties tipping
+            auto &y = self.as<FragmentD>().c;
+            return x + y;
+        }
+    };
 
-	using FuncSet1 = function_set<Methods1, Methods2, Methods3, Methods4, Methods5, Methods6>;
+    using FuncSet1 = function_set<Methods1, Methods2, Methods3,
+            SingleFragmentAccess,
+            MultiFragmentAccess,
+            PropertiesConflict>;
 
-	struct CompareTag {};
-	struct MethodsComp1 : impl_for<FragmentA>::exclude<FragmentB>::tag<CompareTag> {
-		auto comparable(this auto&& self) { return self.a; }
-	};
-	struct MethodsComp2 : impl_for<FragmentB>::exclude<FragmentA>::tag<CompareTag> {
-		auto comparable(this auto&& self) { return self.b; }
-	};
-	struct MethodsComp3 : impl_for<FragmentA, FragmentB>::tag<CompareTag> {
-		auto comparable(this auto&& self) { return self.a * self.b; }
-	};
+    struct CompareTag {
+    };
 
-	using FuncSet2 = function_set<MethodsComp1, MethodsComp2, MethodsComp3>;
+    struct MethodsComp1 : impl_for<FragmentA>::exclude<FragmentB>::tag<CompareTag> {
+        auto Comparable(this auto &&self) { return self.a; }
+    };
 
-	auto operator<=> (
-		std::derived_from<CompareTag> auto& a,
-		std::derived_from<CompareTag> auto& b)
-	{
-		return a.comparable() <=> b.comparable();
-	}
+    struct MethodsComp2 : impl_for<FragmentB>::exclude<FragmentA>::tag<CompareTag> {
+        auto Comparable(this auto &&self) { return self.b; }
+    };
 
-	using FuncSetFinal = function_set<FuncSet1, FuncSet2>;
+    struct MethodsComp3 : impl_for<FragmentA, FragmentB>::tag<CompareTag> {
+        auto Comparable(this auto &&self) { return self.a * self.b; }
+    };
 
+    using FuncSet2 = function_set<MethodsComp1, MethodsComp2, MethodsComp3>;
 
-	struct Object1 : combine<FuncSetFinal, pub<FragmentA>, FragmentB> {};
-	static_assert(sizeof(Object1) == 2 * sizeof(int32_t));
+    auto operator<=>(
+            std::derived_from<CompareTag> auto &a,
+            std::derived_from<CompareTag> auto &b) {
+        return a.Comparable() <=> b.Comparable();
+    }
 
-	struct Object2 : combine<FuncSetFinal, FragmentA, FragmentC> {};
-	static_assert(sizeof(Object2) == 2 * sizeof(int32_t));
+    using FuncSetFinal = function_set<FuncSet1, FuncSet2>;
 
-	struct Object3 : combine<pub<Object1>, Object2> {};
-	static_assert(sizeof(Object3) == 3 * sizeof(int32_t));
+    struct ObjectAB : combine<FuncSetFinal, pub<FragmentA>, FragmentB> {};
+    static_assert(sizeof(ObjectAB) == 2 * sizeof(int32_t));
 
-	struct Object4 : combine<Object3, FragmentD>::remove<FragmentA, FragmentB> {};
-	static_assert(sizeof(Object4) == 2 * sizeof(int32_t));
+    struct ObjectAC : combine<FuncSetFinal, FragmentA, FragmentC> {};
+    static_assert(sizeof(ObjectAC) == 2 * sizeof(int32_t));
 
-	struct Object5 : combine<Object3>::visibility_override<priv<FragmentA>> {};
-	static_assert(sizeof(Object5) == sizeof(Object3));
+    struct ObjectABC : combine<pub<ObjectAB>, ObjectAC> {};
+    static_assert(sizeof(ObjectABC) == 3 * sizeof(int32_t));
 
+    struct ObjectABC_ : combine<ObjectABC>::visibility_override<priv<FragmentA>> {};
+    static_assert(sizeof(ObjectABC_) == sizeof(ObjectABC));
+
+    struct ObjectCD : combine<ObjectABC, FragmentD>::remove<FragmentA, FragmentB> {};
+    static_assert(sizeof(ObjectCD) == 2 * sizeof(int32_t));
+
+    using is_a_accessible = decltype([](auto t) requires requires { t.a; } {});
+    static_assert(std::invocable<is_a_accessible, ObjectABC>);
+    static_assert(!std::invocable<is_a_accessible, ObjectABC_>);
 }
 
 using namespace sample;
 
 int main() {
-	Object1 o1;
-	o1.a = 1;
-	o1.func_ab();
-	o1.func_ab_1();
+    ObjectAB o1;
+    o1.a = 1;
+    o1.Auto_AB_noC();
 
-	Object2 o2;
-	o2.func_ac();
+    ObjectAC o2;
+    o2.Auto_AC();
 
-	Object3 o3;
+    ObjectABC o3;
+    o3.Setter_ABC(1, 2, 3);
+    o3.Auto_AC();
+    o3.Auto_BC();
+    o3.Auto_ABC();
+    o3.EmbeddedTupleCaster_ABC();
+    o3.FragmentCopy_ABC();
 
-	o3.initializer(1, 2, 3);
-	o3.func_ac();
-	o3.func_bc();
-	o3.func_abc();
-	o3.func_abc_1();
-	o3.func_abc_copy();
+    ObjectCD o4;
+    o4.TemplateCast_C_noAB();
+    o4.EmbeddedCaster_C_noAB();
+    o4.EmbeddedTupleCaster_CD();
+    o4.StaticCast_CD();
+    o4.Caster_CD();
+    o4.TemplateCast_CD();
 
-	Object4 o4;
-	o4.func_c();
-	o4.func_cd();
-	o4.func_cd_1();
-	o4.func_cd_2();
-    o4.func_cd_3();
-    o4.func_c_1();
-    o4.func_c_1();
 
-	Object5 o5;
-	using is_a_accessible = decltype([](auto t) requires requires { t.a; } {});
-	static_assert(std::invocable<is_a_accessible, Object3 >);
-	static_assert(!std::invocable<is_a_accessible, Object5 >);
-
-	o1 <=> o2;
-	o2 <=> o3;
-	o1 <=> o3;
+    o1 <=> o2;
+    o2 <=> o3;
+    o1 <=> o3;
 
 #ifdef TYPE_INFO_SAMPLE
-	generic::sample_use();
+    generic::sample_use();
 #endif // TYPE_INFO_SAMPLE
 }
+
+
+struct EquivalentTypeCast : impl_for<FragmentC, FragmentD> {
+    auto FuncCD(this access_list self) {
+        auto [fc, fd] = self.cref();
+        return fc.c + fd.c;
+    }
+
+
+};

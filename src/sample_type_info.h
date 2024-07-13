@@ -155,12 +155,10 @@ namespace generic
 			: impl_for<hash_frag>
 			::tag<type_index_hash_func_tag>
 		{
-			uint64_t hash(this auto&& self){ return self.hash_; }
+			uint64_t hash(this auto&& self) { return self.hash_; }
 		};
-		
-		
-		detail::tags_from_methods<type_list<type_cache_hash>>::list;
-		struct type_index_name : impl_for<index>::exclude<name_frag> {
+
+        struct type_index_name : impl_for<index>::exclude<name_frag> {
 			const char* name(this auto&& self) { return self.info_->name; }
 		};
 		struct type_cache_name : impl_for<name_frag> {
@@ -189,15 +187,17 @@ namespace generic
 		struct type_empty : impl_for<>::any<index, size_frag> {
 			bool is_empty(this auto&& self) { return self.size() == 0; }
 		};
-
-		struct type_copy_constructor : impl_for<>/*::custom_cond <decltype([](auto t) requires requires { t.copy_constructor_ptr(); } {}) >*/
+		
+		//todo can custom conditions be friendly to the intellisense?
+#ifdef __INTELLISENSE__
+		struct type_copy_constructor : impl_for<>
 		{
 			template <typename T>
 			using __cond__ = std::bool_constant < requires(T t) { t.copy_constructor_ptr(); } > ;
 			void* copy_constructor(this auto&& self, void* dest, const void* src) { return self.copy_constructor_ptr()(dest, src); }
 			bool is_copy_constructible(this auto&& self) { return self.copy_constructor_ptr() != nullptr; }
 		};
-		struct type_move_constructor : impl_for<>/*::custom_cond <decltype([](auto t) requires requires { t.move_constructor_ptr(); } {}) >*/
+		struct type_move_constructor : impl_for<>
 		{
 			template <typename T>
 			using __cond__ = std::bool_constant < requires(T t) { t.move_constructor_ptr(); } > ;
@@ -234,6 +234,48 @@ namespace generic
 				return self.destructor_ptr() == nullptr;
 			}
 		};
+#else//ok for idea's IDE
+		struct type_copy_constructor : impl_for<>::custom_cond <decltype([](auto t) requires requires { t.copy_constructor_ptr(); } {}) >
+		{
+			void* copy_constructor(this auto&& self, void* dest, const void* src) { return self.copy_constructor_ptr()(dest, src); }
+			bool is_copy_constructible(this auto&& self) { return self.copy_constructor_ptr() != nullptr; }
+		};
+		struct type_move_constructor : impl_for<>::custom_cond <decltype([](auto t) requires requires { t.move_constructor_ptr(); } {}) >
+		{
+			void* move_constructor(this auto&& self, void* dest, void* src) { return self.move_constructor_ptr()(dest, src); }
+			bool is_move_constructible(this auto&& self) { return self.move_constructor_ptr() != nullptr; }
+		};
+
+		struct type_destructor : impl_for<>::custom_cond <decltype([](auto t) requires requires { t.destructor_ptr(); t.size(); } {}) >
+		{
+			void destructor(this auto&& self, void* dest) {
+				if (self.destructor_ptr() == nullptr) return;
+				self.destructor_ptr()(dest);
+			}
+			void destructor(this auto&& self, void* addr, size_t count) {
+				if (self.destructor_ptr() == nullptr) return;
+				for (size_t i = 0; i < count; i++)
+				{
+					self.destructor_ptr()(addr);
+					addr = (uint8_t*)addr + self.size();
+				}
+			}
+			void destructor(this auto&& self, void* begin, void* end)
+			{
+				if (self.destructor_ptr() == nullptr) return;
+				for (; begin != end; (uint8_t*)begin + self.size())
+				{
+					self.destructor_ptr()(begin);
+				}
+			}
+			bool is_trivially_destructible(this auto&& self)
+			{
+				return self.destructor_ptr() == nullptr;
+			}
+		};
+#endif
+
+
 
 		using type_info_funcset = function_set<
 			type_index_size, type_cache_size,
@@ -270,7 +312,7 @@ namespace generic
 	struct type_index_hash_size_only : combine<info_frag::hash_frag, info_frag::size_frag, type_info_funcset> {
 		type_index_hash_size_only(const type_info& info) {
 			hash_ = info.hash;
-
+            size_ = info.size;
 		}
 	};
 
