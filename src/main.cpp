@@ -23,7 +23,8 @@ namespace sample
 		auto func_bc(this auto&& self) { return self.b + self.c; }
 	};
 	struct Methods4 : impl_for<FragmentC>::exclude<FragmentA, FragmentB> {
-		auto func_c(this caster<FragmentC> self) { return self.cref().c; }
+		auto func_c(this auto&& self) { return self.as<FragmentC>().c; }
+		auto func_c_1(this caster<FragmentC> self) { return self.cref().c; }
 	};
 
 	struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC> {
@@ -42,6 +43,8 @@ namespace sample
 		auto func_abc(this auto&& self) {
 			return self.a + self.b + self.c;
 		}
+		//note that this cause a method tipping problem in intellisense 
+		//as it didn't consider caster as a friend class
 		auto func_abc_1(this caster<FragmentA, FragmentB, FragmentC> self) { //embedded caster
 			auto [fa, fb, fc] = self.cref();
 			return fa.a + fb.b + fc.c;
@@ -62,18 +65,21 @@ namespace sample
 		}
 
 #undef self_as
-
-		auto func_cd_1(this caster<FragmentC, FragmentD> self) {
+		auto func_cd_1(this auto&& self) {
+            auto [fc, fd] = caster<FragmentC, FragmentD>(self).cref();
+            return fc.c + fd.c;
+		}
+		auto func_cd_2(this caster<FragmentC, FragmentD> self) {
 			auto [fc, fd] = self.cref();
 			return fc.c + fd.c;
 		}
-		auto func_cd_2(this auto&& self) {
+		auto func_cd_3(this auto&& self) {
 			auto& x = caster<FragmentC>(self).cref().c;
 			auto& y = caster<FragmentD>(self).cref().c;
 			return x + y;
 		}
 		//this is unfriendly to intellisense
-		auto func_cd_3(this auto&& self) {
+		auto func_cd_4(this auto&& self) {
 			auto& x = self.as<FragmentC>().c;
 			auto& y = self.as<FragmentD>().c;
 			return x + y;
@@ -146,7 +152,10 @@ int main() {
 	o4.func_c();
 	o4.func_cd();
 	o4.func_cd_1();
-	
+	o4.func_cd_2();
+    o4.func_cd_3();
+    o4.func_c_1();
+    o4.func_c_1();
 
 	Object5 o5;
 	using is_a_accessible = decltype([](auto t) requires requires { t.a; } {});
