@@ -23,7 +23,7 @@ namespace sample
 		auto func_bc(this auto&& self) { return self.b + self.c; }
 	};
 	struct Methods4 : impl_for<FragmentC>::exclude<FragmentA, FragmentB> {
-		auto func_c(this auto&& self) { return static_cast<FragmentC&>(self).c; }
+		auto func_c(this auto&& self) { return self.as<FragmentC>().c; }
 	};
 
 	struct Methods5 : impl_for<FragmentA, FragmentB, FragmentC> {
@@ -69,7 +69,7 @@ namespace sample
 			auto [fc, fd] = caster<FragmentC, FragmentD>(self).cref();
 			return fc.c + fd.c;
 		}
-		//not recommended to use this is unfriendly to IDE
+		//this is unfriendly to intellisense
 		auto func_cd_3(this auto&& self) {
 			auto& x = self.as<FragmentC>().c;
 			auto& y = self.as<FragmentD>().c;

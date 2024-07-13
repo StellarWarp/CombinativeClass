@@ -288,7 +288,6 @@ friend typename methods::template get<(n)*16+15>;\
 			using methods = TestInherit::method_list;
 			_COMBINATIVE_MAKE_FRIENDS_128(0);
 
-			friend struct impl_for_utils;
 			template <typename... V>
 			friend class caster;
 			template <typename U>
@@ -331,7 +330,6 @@ friend typename methods::template get<(n)*16+15>;\
 			using methods = InheritImpl::method_list;
 			_COMBINATIVE_MAKE_FRIENDS_128(0);
 
-			friend struct impl_for_utils;
 			template <typename... V>
 			friend class caster;
 			template <typename T>
@@ -605,9 +603,6 @@ friend typename methods::template get<(n)*16+15>;\
 			static constexpr bool custom_cond_tmp<Self, custom_cond_impl<Lambda>> = std::invocable<Lambda, Self>;
 		};
 
-		struct impl_for_utils
-		{
-		};
 
 		template<typename... T, typename... Tag>
 		class MSC_EBO impl_for<type_list<T...>, type_list<Tag...>>
