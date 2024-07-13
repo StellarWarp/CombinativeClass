@@ -89,6 +89,9 @@ The Combinative Class basically an extension of CRTP with following feature
   - methods that don't match it's requirement won't appear in the final class
 - macro free :
   - zero exposed macro
+- intellisense friendly :
+  - test on msvc tool chain : intellisense can infer the member and method of the combinative class
+  - idea IDE rider fail to infer the type
   
 
 ## Sample
@@ -203,7 +206,7 @@ namespace sample
 	struct Object2 : combine<FuncSetFinal, FragmentA, FragmentC> {};
 	static_assert(sizeof(Object2) == 2 * sizeof(int32_t));
 
-	struct Object3 : combine<Object1, Object2> {};
+	struct Object3 : combine<pub<Object1>, Object2> {};
 	static_assert(sizeof(Object3) == 3 * sizeof(int32_t));
 
 	struct Object4 : combine<Object3, FragmentD>::remove<FragmentA, FragmentB> {};
@@ -249,7 +252,6 @@ int main() {
 #ifdef TYPE_INFO_SAMPLE
 	generic::sample_use();
 #endif // TYPE_INFO_SAMPLE
-
 }
 
 ```

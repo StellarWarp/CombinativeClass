@@ -18,14 +18,14 @@ namespace combinative
 		template<typename U>
 		caster(U& self) : std::tuple<T&...>(static_cast<T&>(self)...) {}
 		std::tuple<T&...>& ref() { return *this; }
-		std::tuple<const T&...> cref(){
-			return [this]<size_t... I>(std::index_sequence<I...>) {
+		std::tuple<const T&...> cref() {
+			return[this]<size_t... I>(std::index_sequence<I...>) {
 				return std::tuple<const T&...>{ std::get<I>(ref())... };
 			}(std::make_index_sequence<sizeof...(T)>());
 		}
-		std::tuple<T...> val() { 
-			return [this]<size_t... I>(std::index_sequence<I...>) {
-				return std::make_tuple(std::get<I>(ref())...); 
+		std::tuple<T...> val() {
+			return[this]<size_t... I>(std::index_sequence<I...>) {
+				return std::make_tuple(std::get<I>(ref())...);
 			}(std::make_index_sequence<sizeof...(T)>());
 		}
 		template<size_t I>
@@ -59,12 +59,15 @@ namespace combinative
 	template<typename T>
 	struct pub;
 	template<typename T>
+	struct prot;
+	template<typename T>
 	struct priv;
 
 	struct combinative_object {};
 
 	namespace detail
 	{
+
 
 
 		template<typename... T>
@@ -76,10 +79,6 @@ namespace combinative
 
 
 
-		template<typename>
-		struct ProtectedMultiInherit;
-		template<typename... T>
-		struct MSC_EBO ProtectedMultiInherit<type_list<T...>> : protected T... {};
 
 		template<typename Pub, typename Prot, typename Priv>
 		struct UnWarpControlSymbolsImplRes;
@@ -108,6 +107,20 @@ namespace combinative
 			typename... Pub, typename... Prot, typename... Priv>
 		struct UnWarpControlSymbolsImpl<
 			type_list<U, Unsolve...>,
+			type_list<Pub...>,
+			type_list<Prot...>,
+			type_list<Priv...>>
+		{
+			using type = UnWarpControlSymbolsImpl<
+				type_list<Unsolve...>,
+				type_list<Pub...>,
+				type_list<Prot..., U>,
+				type_list<Priv...>>::type;
+		};
+		template<typename U, typename... Unsolve,
+			typename... Pub, typename... Prot, typename... Priv>
+		struct UnWarpControlSymbolsImpl<
+			type_list<prot<U>, Unsolve...>,
 			type_list<Pub...>,
 			type_list<Prot...>,
 			type_list<Priv...>>
@@ -195,7 +208,7 @@ namespace combinative
 		//	using method_list = typename valid_method<T, new_list, type_list<Methods...>>::method_list;
 		//};
 		template <typename T, typename... Valid, typename Method, typename... Methods>
-		struct valid_method<T, type_list<Valid...>, type_list<Method, Methods...>>  
+		struct valid_method<T, type_list<Valid...>, type_list<Method, Methods...>>
 		{
 			constexpr static bool is_valid = Method::template __cond__<T>::value;
 			using new_list = std::conditional_t<is_valid, type_list<Valid..., Method>, type_list<Valid...>>;
@@ -242,7 +255,7 @@ namespace combinative
 			using method_list = MethodList;
 		};
 
-//wait for C++26 variadic friend
+		//wait for C++26 variadic friend
 #define _COMBINATIVE_MAKE_FRIENDS_16(n)\
 friend typename methods::template get<(n)*16+0>;\
 friend typename methods::template get<(n)*16+1>;\
@@ -266,7 +279,7 @@ friend typename methods::template get<(n)*16+15>;\
 #define _COMBINATIVE_MAKE_FRIENDS_128(n) _COMBINATIVE_MAKE_FRIENDS_64(n*2) _COMBINATIVE_MAKE_FRIENDS_64(n*2+1)
 
 		template <typename FunctionSet, typename... T>
-		struct MSC_EBO TestInherit : 
+		struct MSC_EBO TestInherit :
 			ValidInterfaceFrag<ControlledMultiInherit<T...>, FunctionSet>,
 			ControlledMultiInherit<T...>
 		{
@@ -331,34 +344,36 @@ friend typename methods::template get<(n)*16+15>;\
 #undef _COMBINATIVE_MAKE_FRIENDS_128
 
 
-		template <typename T>
-		concept has_fragment_list = requires { typename T::fragment_list; };
-		template <typename T>
-		concept has_method_list = requires { typename T::method_list; };
-		template <typename T>
-		concept has_function_sets = requires { typename T::function_sets; };
 
 
-		struct fragment_info_base
+
+		struct visibility_info_base
 		{
 			enum visibility { PRIV, PROT, PUB };
 		};
 		template<typename T>
-		struct fragment_info : fragment_info_base
+		struct visibility_info : visibility_info_base
 		{
 			using ident = T;
 			using type = T;
 			static constexpr visibility vib = PROT;
 		};
 		template<typename T>
-		struct fragment_info<pub<T>> : fragment_info_base
+		struct visibility_info<prot<T>> : visibility_info_base
+		{
+			using ident = T;
+			using type = T;
+			static constexpr visibility vib = PROT;
+		};
+		template<typename T>
+		struct visibility_info<pub<T>> : visibility_info_base
 		{
 			using ident = pub<T>;
 			using type = T;
 			static constexpr visibility vib = PUB;
 		};
 		template<typename T>
-		struct fragment_info<priv<T>> : fragment_info_base
+		struct visibility_info<priv<T>> : visibility_info_base
 		{
 			using ident = priv<T>;
 			using type = T;
@@ -402,7 +417,7 @@ friend typename methods::template get<(n)*16+15>;\
 
 
 		template <typename... Fragment>
-		using mega_frag_idents = mega_frag_idents_impl<type_list<fragment_info<Fragment>...>, type_list<> >::type;
+		using mega_frag_idents = mega_frag_idents_impl<type_list<visibility_info<Fragment>...>, type_list<> >::type;
 
 
 		template <typename FuncSets, typename Fragments>
@@ -424,8 +439,21 @@ friend typename methods::template get<(n)*16+15>;\
 				type_list<Fragment...>
 			>;
 		};
-		template <typename T, typename... Ts, typename... FuncSet, typename... Fragment> requires (!has_fragment_list<T>) && (!has_method_list<T>) //normal fragment
-			struct inherit_infos_impl<
+
+		template <typename T>
+		concept has_fragment_list = requires { typename T::fragment_list; };
+		template <typename T>
+		concept has_method_list = requires { typename T::method_list; };
+		template <typename T>
+		concept has_function_sets = requires { typename T::function_sets; };
+
+		template <typename T>
+		concept is_combinative_object = has_fragment_list<typename visibility_info<T>::type>;
+
+
+		template <typename T, typename... Ts, typename... FuncSet, typename... Fragment>
+			requires (!is_combinative_object<T>) && (!has_method_list<T>) //normal fragment
+		struct inherit_infos_impl<
 			type_list<T, Ts...>,
 			type_list<FuncSet...>,
 			type_list<Fragment...>>
@@ -435,8 +463,9 @@ friend typename methods::template get<(n)*16+15>;\
 				type_list<FuncSet...>,
 				type_list<Fragment..., T>>::info;
 		};
-		template <typename T, typename... Ts, typename... FuncSet, typename... Fragment> requires (!has_fragment_list<T>) && (has_method_list<T>) //func set
-			struct inherit_infos_impl<
+		template <typename T, typename... Ts, typename... FuncSet, typename... Fragment>
+			requires (!is_combinative_object<T>) && (has_method_list<T>) //func set
+		struct inherit_infos_impl<
 			type_list<T, Ts...>,
 			type_list<FuncSet...>,
 			type_list<Fragment...>>
@@ -446,26 +475,43 @@ friend typename methods::template get<(n)*16+15>;\
 				type_list<FuncSet..., T>,
 				type_list<Fragment...>>::info;
 		};
-		template <typename T, typename... Ts, typename... FuncSet, typename... Fragment> requires (has_fragment_list<T>) && (!has_function_sets<T>) //object
-			struct inherit_infos_impl<
-			type_list<T, Ts...>,
-			type_list<FuncSet...>,
-			type_list<Fragment...>>
+
+		template<typename T>
+		struct object_fragments_convert : object_fragments_convert<prot<T>> {}; //defualt to be protected combine
+		template<typename T>
+		struct object_fragments_convert<pub<T>>
 		{
-			using new_fragment_list = type_list<Fragment...>::template cat<typename T::fragment_list>;
-			using info = typename inherit_infos_impl<
-				type_list<Ts...>,
-				type_list<FuncSet...>,
-				new_fragment_list>::info;
+			using fragments = T::fragment_list;
 		};
-		template <typename T, typename... Ts, typename... FuncSet, typename... Fragment> requires (has_fragment_list<T>) && (has_function_sets<T>) //object
-			struct inherit_infos_impl<
+		template<typename T>
+		struct object_fragments_convert<prot<T>>
+		{
+			template<typename U>
+			using convert = std::conditional_t< (visibility_info<U>::vib > visibility_info_base::PROT),
+				prot<typename visibility_info<U>::type>, U >;
+			using fragments = T::fragment_list::template cast< convert >;
+		};
+		template<typename T>
+		struct object_fragments_convert<priv<T>>
+		{
+			template<typename U>
+			using convert = std::conditional_t< (visibility_info<U>::vib > visibility_info_base::PRIV),
+				priv<typename visibility_info<U>::type>, U >;
+
+			using fragments = T::fragment_list::template cast< convert >;
+		};
+
+		template <typename T, typename... Ts, typename... FuncSet, typename... Fragment>
+			requires (is_combinative_object<T>) //object
+		struct inherit_infos_impl<
 			type_list<T, Ts...>,
 			type_list<FuncSet...>,
 			type_list<Fragment...>>
 		{
-			using new_fragment_list = type_list<Fragment...>::template cat<typename T::fragment_list>;
-			using new_function_sets = type_list <FuncSet...>::template cat<typename T::function_sets>;
+			using object_type = visibility_info<T>::type;
+			using object_fragments = object_fragments_convert<T>::fragments;
+			using new_fragment_list = type_list<Fragment...>::template cat<object_fragments>;
+			using new_function_sets = type_list <FuncSet...>::template cat<typename object_type::function_sets>;
 			using info = typename inherit_infos_impl<
 				type_list<Ts...>,
 				new_function_sets,
@@ -489,7 +535,7 @@ friend typename methods::template get<(n)*16+15>;\
 			struct remove_helper
 			{
 				template<typename V>
-				using cast_to_type = fragment_info<V>::type;
+				using cast_to_type = visibility_info<V>::type;
 				using remove_list = type_list<U...>::template cast<cast_to_type>;
 				template<typename V>
 				struct in_remove_list
@@ -502,7 +548,7 @@ friend typename methods::template get<(n)*16+15>;\
 			struct visibility_override_helper
 			{
 				template<typename V>
-				using cast_to_type = fragment_info<V>::type;
+				using cast_to_type = visibility_info<V>::type;
 				using current_fragments = inherit_infos<T...>::fragments::template cast<cast_to_type>;
 				static_assert((current_fragments::template contains<cast_to_type<U>> || ...),
 					"visibility override can only be used with inheritance");
@@ -560,7 +606,7 @@ friend typename methods::template get<(n)*16+15>;\
 		};
 
 		struct impl_for_utils
-		{			
+		{
 		};
 
 		template<typename... T, typename... Tag>
@@ -599,31 +645,31 @@ friend typename methods::template get<(n)*16+15>;\
 		template <typename Unsolve, typename Methods>
 		struct function_set_unwarp;
 		template <typename... Method>
-		struct function_set_unwarp<type_list<>,type_list<Method...>>
+		struct function_set_unwarp<type_list<>, type_list<Method...>>
 		{
 			using type = function_set_base<Method...>;
 		};
-		template <typename U,typename... Unsolve, typename... Method> requires has_method_list<U>
-		struct function_set_unwarp<type_list<U, Unsolve...>, type_list<Method...>> 
+		template <typename U, typename... Unsolve, typename... Method> requires has_method_list<U>
+		struct function_set_unwarp<type_list<U, Unsolve...>, type_list<Method...>>
 		{
-			using new_list = type_list<Method...>::template cat<typename U:: method_list>;
+			using new_list = type_list<Method...>::template cat<typename U::method_list>;
 			using type = function_set_unwarp<type_list<Unsolve...>, new_list>::type;
 		};
 		template <typename U, typename... Unsolve, typename... Method> requires (!has_method_list<U>)
-		struct function_set_unwarp<type_list<U, Unsolve...>, type_list<Method...>>
+			struct function_set_unwarp<type_list<U, Unsolve...>, type_list<Method...>>
 		{
-			using new_list = type_list<Method...,U>;
+			using new_list = type_list<Method..., U>;
 			using type = function_set_unwarp<type_list<Unsolve...>, new_list>::type;
 		};
 
 	}
 
 
-	template <typename... T> 
+	template <typename... T>
 	using function_set = detail::function_set_unwarp<type_list<T...>, type_list<>>::type;
 
 	template<typename... T>
-	using impl_for = detail::impl_for<type_list<T...>,type_list<>>;
+	using impl_for = detail::impl_for<type_list<T...>, type_list<>>;
 	template <typename... T>
 	using combine = detail::combine<T...>;
 

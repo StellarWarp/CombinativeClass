@@ -15,18 +15,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="src\main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="type_list.h">
+    <ClInclude Include="src\type_list.h">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="combinative.h">
+    <ClInclude Include="src\combinative.h">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="sample_type_info.h">
+    <ClInclude Include="src\sample_type_info.h">
       <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>

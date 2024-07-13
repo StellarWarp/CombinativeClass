@@ -131,12 +131,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClInclude Include="sample_type_info.h" />
+    <ClCompile Include="src\main.cpp" />
+    <ClInclude Include="src\sample_type_info.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="combinative.h" />
-    <ClInclude Include="type_list.h" />
+    <ClInclude Include="src\combinative.h" />
+    <ClInclude Include="src\type_list.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -108,7 +108,7 @@ namespace sample
 	struct Object2 : combine<FuncSetFinal, FragmentA, FragmentC> {};
 	static_assert(sizeof(Object2) == 2 * sizeof(int32_t));
 
-	struct Object3 : combine<Object1, Object2> {};
+	struct Object3 : combine<pub<Object1>, Object2> {};
 	static_assert(sizeof(Object3) == 3 * sizeof(int32_t));
 
 	struct Object4 : combine<Object3, FragmentD>::remove<FragmentA, FragmentB> {};
@@ -154,5 +154,4 @@ int main() {
 #ifdef TYPE_INFO_SAMPLE
 	generic::sample_use();
 #endif // TYPE_INFO_SAMPLE
-
 }
