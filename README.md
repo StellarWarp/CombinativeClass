@@ -85,7 +85,9 @@ The Combinative Class basically an extension of CRTP with following feature
   - combinative class can be the combination of combinative classes
 - access control : 
   - fragment visibility defualt to be protected
-  - can be explicitly set by `pub` `prot` and `priv`
+  - combinative classes combination is default to be protected
+  - method struct inheritance is public（may support function set access control in the future）
+  - visibility can be explicitly control by warpping type in template `pub` `prot` and `priv`
   - friend declaration for CRTP parent is implied
 - method visibility friendly :
   - methods that don't match it's requirement won't appear in the final class
