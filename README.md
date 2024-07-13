@@ -9,10 +9,10 @@ The Combinative Class is a tiny tool that leverages C++23 features to provide an
 
 using namespace combinative;
 
-struct A{ int a{}; };
-struct B{ int b{}; };
-struct C{ int c{}; };
-struct D{ int d{}; };
+struct A{ int a; };
+struct B{ int b; };
+struct C{ int c; };
+struct D{ int d; };
 
 struct MethodA : impl_for<A>
 {
