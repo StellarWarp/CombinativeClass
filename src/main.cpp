@@ -48,13 +48,13 @@ namespace sample {
             return self.a + self.b + self.c;
         }
 
-        auto EmbeddedTupleCaster_ABC(this access_list self) { //embedded caster
+        auto EmbeddedTupleCaster_ABC(this access_list self) {
             auto [fa, fb, fc] = self.cref();
             return fa.a + fb.b + fc.c;
         }
 
         auto FragmentCopy_ABC(this access_list self) {
-            auto [fa, fb, fc] = self.val();//copy
+            auto [fa, fb, fc] = self.val();
             return std::make_tuple(fa.a, fb.b, fc.c);
         }
     };
@@ -146,7 +146,7 @@ int main() {
     o3.Auto_AC();
     o3.Auto_BC();
     o3.Auto_ABC();
-    o3.EmbeddedTupleCaster_ABC();
+    o3.EmbeddedTupleCaster_ABC();//intellisense as some problem in tipping this
     o3.FragmentCopy_ABC();
 
     ObjectCD o4;
@@ -157,7 +157,6 @@ int main() {
     o4.Caster_CD();
     o4.TemplateCast_CD();
 
-
     o1 <=> o2;
     o2 <=> o3;
     o1 <=> o3;
@@ -166,13 +165,3 @@ int main() {
     generic::sample_use();
 #endif // TYPE_INFO_SAMPLE
 }
-
-
-struct EquivalentTypeCast : impl_for<FragmentC, FragmentD> {
-    auto FuncCD(this access_list self) {
-        auto [fc, fd] = self.cref();
-        return fc.c + fd.c;
-    }
-
-
-};
