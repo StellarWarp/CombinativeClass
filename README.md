@@ -74,6 +74,8 @@ for each version adding to the project
   
 those issues are making it hard to maintain
 
+the solution see `sample_type_info.h`. both CRTP implementation and Combinative Class implementation are provided
+
 
 
 The Combinative Class basically an extension of CRTP with following feature
@@ -91,7 +93,6 @@ The Combinative Class basically an extension of CRTP with following feature
   - zero exposed macro
 - intellisense friendly :
   - test on msvc tool chain : intellisense can infer the member and method of the combinative class
-  - idea IDE rider fail to infer the type
   
 
 ## Sample
