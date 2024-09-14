@@ -163,7 +163,7 @@ The Combinative Class basically an extension of CRTP with following feature
 - macro free :
   - zero exposed macro
 - intellisense friendly :
-  - test on msvc tool chain : intellisense can infer the member and method of the combinative class
+  - VS intellisense and clangd can infer the member and method of the combinative class
   
 
 ## Feature Sample
