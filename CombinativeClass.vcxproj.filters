@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\main.cpp">
+    <ClCompile Include="sample\main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -28,6 +28,12 @@
     </ClInclude>
     <ClInclude Include="src\sample_type_info.h">
       <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="sample\sample_type_info.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="sample\quick_sample.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

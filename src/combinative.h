@@ -28,7 +28,16 @@ namespace combinative
 				return std::make_tuple(std::get<I>(ref())...);
 			}(std::make_index_sequence<sizeof...(T)>());
 		}
-		template<size_t I>
+        template<typename... U>
+        std::tuple<U...> get()
+        {
+            return std::tuple<U...>{ [this]() -> U{
+                using type = std::decay_t<U>;
+                constexpr size_t index = detail::type_list<T...>::template index_of<type>;
+                return std::get<index>(ref());
+            }()... };
+        }
+        template<size_t I>
 		decltype(auto) get() { return std::get<I>(ref()); }
 	};
 	template<typename T>
@@ -68,17 +77,12 @@ namespace combinative
 
 	namespace detail
 	{
-
-
-
 		template<typename... T>
 		struct MSC_EBO MultiInherit : T... {};
 		template<>
 		struct MultiInherit<> {};
 		template<typename... T>
 		struct MSC_EBO MultiInherit<type_list<T...>> : T... {};
-
-
 
 
 		template<typename Pub, typename Prot, typename Priv>
@@ -226,6 +230,7 @@ namespace combinative
 		template<typename MethodList>
 		using MethodInheritList = type_list<>::template cat<MethodList, typename tags_from_methods<MethodList>::list>;
 
+		// filter out methods that are not satisfied with custom condition
 		template <typename Final,
 			typename MethodList = typename valid_method<Final, type_list<>, typename Final::method_list>::method_list
 		>
@@ -248,6 +253,7 @@ namespace combinative
 			using new_list = std::conditional_t<is_valid, type_list<Valid..., Method>, type_list<Valid...>>;
 			using method_list = typename valid_method_frag<T, new_list, type_list<Methods...>>::method_list;
 		};
+		// filter out methods that are not satisfied with fragment requirement
 		template <typename Final, typename FunctionSet,
 			typename MethodList = typename valid_method_frag<Final, type_list<>, typename FunctionSet::method_list>::method_list
 		>
@@ -672,45 +678,45 @@ friend typename methods::template get<(n)*16+15>;\
 			using depends_on_any = __ExtendCondition__<depends_on_any_impl<U...>>;
 			template<typename... U>
 			using depends_on = __ExtendCondition__<depends_on_all_impl<U...>>;
-			template<typename Lambda>
-			using custom_cond = __ExtendCondition__<custom_cond_impl<Lambda>>;
+			template<auto Lambda>
+			using custom_cond = __ExtendCondition__<custom_cond_impl<decltype(Lambda)>>;
 			template<typename... U>
 			using tag = impl_for<type_list<T...>, type_list<Tag..., U...>>;
 		};
 
 
 		template <typename Unsolve, typename Methods>
-		struct function_set_unwarp;
+		struct function_set_unwrap;
 		template <typename... Method>
-		struct function_set_unwarp<type_list<>, type_list<Method...>>
+		struct function_set_unwrap<type_list<>, type_list<Method...>>
 		{
 			using type = function_set_base<Method...>;
 		};
 		template <typename U, typename... Unsolve, typename... Method> requires has_method_list<U>
-		struct function_set_unwarp<type_list<U, Unsolve...>, type_list<Method...>>
+		struct function_set_unwrap<type_list<U, Unsolve...>, type_list<Method...>>
 		{
 			using new_list = type_list<Method...>::template cat<typename U::method_list>;
-			using type = function_set_unwarp<type_list<Unsolve...>, new_list>::type;
+			using type = function_set_unwrap<type_list<Unsolve...>, new_list>::type;
 		};
 		template <typename U, typename... Unsolve, typename... Method> requires (!has_method_list<U>)
-			struct function_set_unwarp<type_list<U, Unsolve...>, type_list<Method...>>
+			struct function_set_unwrap<type_list<U, Unsolve...>, type_list<Method...>>
 		{
 			using new_list = type_list<Method..., U>;
-			using type = function_set_unwarp<type_list<Unsolve...>, new_list>::type;
+			using type = function_set_unwrap<type_list<Unsolve...>, new_list>::type;
 		};
 
+        template <typename... T>
+        using function_set = detail::function_set_unwrap<type_list<T...>, type_list<>>::type;
 	}
 
 
-	template <typename... T>
-	using function_set = detail::function_set_unwarp<type_list<T...>, type_list<>>::type;
+    using detail::function_set;
 
-	template<typename... T>
-	using impl_for = detail::impl_for<type_list<T...>, type_list<>>;
+    template<typename... T>
+    using impl_for = detail::impl_for<detail::type_list<T...>, detail::type_list<>>;
+
 	template <typename... T>
 	using combine = detail::combine<T...>;
-
-
 
 }
 

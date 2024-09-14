@@ -7,6 +7,6 @@ include_directories(src)
 
 add_executable(CombinativeClass
         src/combinative.h
-        src/main.cpp
-        src/sample_type_info.h
+        sample/main.cpp
+        sample/sample_type_info.h
         src/type_list.h)

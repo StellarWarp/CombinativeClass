@@ -3,7 +3,7 @@
 #include <concepts>
 #include <tuple>
 
-namespace combinative
+namespace combinative::detail
 {
 
 	template <typename... T> struct type_list {

@@ -131,7 +131,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="sample\main.cpp" />
+    <ClInclude Include="sample\quick_sample.h" />
+    <ClInclude Include="sample\sample_type_info.h" />
     <ClInclude Include="src\sample_type_info.h" />
   </ItemGroup>
   <ItemGroup>

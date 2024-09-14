@@ -1,7 +1,7 @@
 
 #include <ranges>
 #include <type_traits>
-#include "combinative.h"
+#include "../src/combinative.h"
 
 #define TYPE_INFO_SAMPLE
 
@@ -234,19 +234,19 @@ namespace generic
 				return self.destructor_ptr() == nullptr;
 			}
 		};
-#else//ok for idea's IDE
-		struct type_copy_constructor : impl_for<>::custom_cond <decltype([](auto t) requires requires { t.copy_constructor_ptr(); } {}) >
+#else//ok for clangd
+		struct type_copy_constructor : impl_for<>::custom_cond <[](auto t) requires requires { t.copy_constructor_ptr(); } {} >
 		{
 			void* copy_constructor(this auto&& self, void* dest, const void* src) { return self.copy_constructor_ptr()(dest, src); }
 			bool is_copy_constructible(this auto&& self) { return self.copy_constructor_ptr() != nullptr; }
 		};
-		struct type_move_constructor : impl_for<>::custom_cond <decltype([](auto t) requires requires { t.move_constructor_ptr(); } {}) >
+		struct type_move_constructor : impl_for<>::custom_cond <[](auto t) requires requires { t.move_constructor_ptr(); } {} >
 		{
 			void* move_constructor(this auto&& self, void* dest, void* src) { return self.move_constructor_ptr()(dest, src); }
 			bool is_move_constructible(this auto&& self) { return self.move_constructor_ptr() != nullptr; }
 		};
 
-		struct type_destructor : impl_for<>::custom_cond <decltype([](auto t) requires requires { t.destructor_ptr(); t.size(); } {}) >
+		struct type_destructor : impl_for<>::custom_cond <[](auto t) requires requires { t.destructor_ptr(); t.size(); } {} >
 		{
 			void destructor(this auto&& self, void* dest) {
 				if (self.destructor_ptr() == nullptr) return;
@@ -298,6 +298,12 @@ namespace generic
 	{
 		return a.hash() <=> b.hash();
 	}
+    auto operator== (
+            std::derived_from<info_frag::type_index_hash_func_tag> auto& a,
+            std::derived_from<info_frag::type_index_hash_func_tag> auto& b)
+    {
+        return a.hash() == b.hash();
+    }
 
 	struct type_index : combine<info_frag::index, type_info_funcset> {
 		type_index(const type_info& info) { info_ = &info; }
@@ -387,7 +393,6 @@ namespace generic
 
 namespace generic
 {
-
 	struct type_info_caching_interface
 	{
 		size_t size(this auto&& self) requires (requires { self.m_size; })
@@ -493,6 +498,12 @@ namespace generic
 	{
 		return a.hash() <=> b.hash();
 	}
+    bool operator ==(
+            std::derived_from<type_info_caching_interface> auto& a,
+            std::derived_from<type_info_caching_interface> auto& b) requires (requires { a.hash(); b.hash(); })
+    {
+        return a.hash() == b.hash();
+    }
 
 	class type_index : public type_info_caching_interface
 	{
@@ -540,6 +551,8 @@ namespace generic
 
 	void sample_use()
 	{
+
+
 		void* test_mem = std::malloc(1024);
 
 		type_index idx1 = type_info::of<int>();
@@ -573,8 +586,7 @@ namespace generic
 		idx4.is_empty();
 
 		auto comp1 = idx1 <=> idx2;
-		auto comp2 = idx1 <=> idx3;
-		auto comp3 = idx1 <=> idx4;
+		auto comp2 = idx1 < idx3;
 	}
 }
 
