@@ -663,7 +663,7 @@ friend typename methods::template get<(n)*16+15>;\
 			friend struct valid_method_frag;
 
 			template<typename U>
-			using __ExtendCondition__ = impl_for<type_list<T..., U>, type_list<Tag...>>;
+            using ExtendCondition = impl_for<type_list<T..., U>, type_list<Tag...>>;
 
         protected:
             using access_list = impl_for_helper::access_list<T...>;
@@ -671,15 +671,15 @@ friend typename methods::template get<(n)*16+15>;\
 			using method_tags = type_list<Tag...>;
 
 			template<typename... U>
-			using exclude = __ExtendCondition__<exclude_impl<U...>>;
+			using exclude = ExtendCondition<exclude_impl<U...>>;
 			template<typename... U>
-			using any = __ExtendCondition__< any_impl<U...>>;
+			using any = ExtendCondition< any_impl<U...>>;
 			template<typename... U>
-			using depends_on_any = __ExtendCondition__<depends_on_any_impl<U...>>;
+			using depends_on_any = ExtendCondition<depends_on_any_impl<U...>>;
 			template<typename... U>
-			using depends_on = __ExtendCondition__<depends_on_all_impl<U...>>;
+			using depends_on = ExtendCondition<depends_on_all_impl<U...>>;
 			template<auto Lambda>
-			using custom_cond = __ExtendCondition__<custom_cond_impl<decltype(Lambda)>>;
+			using custom_cond = ExtendCondition<custom_cond_impl<decltype(Lambda)>>;
 			template<typename... U>
 			using tag = impl_for<type_list<T...>, type_list<Tag..., U...>>;
 		};
