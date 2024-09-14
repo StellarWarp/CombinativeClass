@@ -116,7 +116,7 @@ namespace sample
         auto ABC_SetDefault(this auto&& self) { return self.Setter_ABC(0,0,0); }
     };
 #else
-	// VS Intellisense has same problem with lambda with concept constraint
+	// VS Intellisense has same problem in lambda with concept constraint
 	// this is the alternative form for custom condition
 	struct CustomCondition : impl_for<>
 	{
