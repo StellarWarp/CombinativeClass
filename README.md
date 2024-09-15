@@ -438,7 +438,7 @@ For **runtime** polymorphism. Type-erasure is required.
 
 following lib can be used to implement the runtime type-erasure.
 
-* [boost.ext.TE](https://github.com/boost-ext/te)
+* [boost-ext.TE](https://github.com/boost-ext/te)
 * [Boost.TypeErasure](https://www.boost.org/doc/libs/1_66_0/doc/html/boost_typeerasure.html)
 * [Folly.Poly](https://github.com/facebook/folly/blob/master/folly/docs/Poly.md)
 * [Proxy](https://github.com/microsoft/proxy)
