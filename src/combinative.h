@@ -15,6 +15,7 @@ namespace combinative
 	class caster : std::tuple<T&...>
 	{
 	public:
+        //the as<T> is call to be lsp friendly
 		template<typename U>
 		caster(U& self) : std::tuple<T&...>(self.template as<T>()...) {}
 		std::tuple<T&...>& ref() { return *this; }
@@ -72,8 +73,6 @@ namespace combinative
 	struct prot;
 	template<typename T>
 	struct priv;
-
-	struct combinative_object {};
 
 	namespace detail
 	{
@@ -205,7 +204,7 @@ namespace combinative
 		{
 			using method_list = type_list<Valid...>;
 		};
-		//template <typename T, typename... Valid, typename Method, typename... Methods> requires (!requires {Method::template __cond__<T>; })
+		//template <typename T, typename... Valid, typename Method, typename... Methods> requires (!requires {Method::template _custom_cond_<T>; })
 		//	struct valid_method<T, type_list<Valid...>, type_list<Method, Methods...>>
 		//{
 		//	constexpr static bool is_valid = true;
@@ -215,7 +214,7 @@ namespace combinative
 		template <typename T, typename... Valid, typename Method, typename... Methods>
 		struct valid_method<T, type_list<Valid...>, type_list<Method, Methods...>>
 		{
-			constexpr static bool is_valid = Method::template __cond__<T>::value;
+			constexpr static bool is_valid = Method::template _custom_cond_<T>::value;
 			using new_list = std::conditional_t<is_valid, type_list<Valid..., Method>, type_list<Valid...>>;
 			using method_list = typename valid_method<T, new_list, type_list<Methods...>>::method_list;
 		};
@@ -249,7 +248,7 @@ namespace combinative
 		template <typename T, typename... Valid, typename Method, typename... Methods>
 		struct valid_method_frag<T, type_list<Valid...>, type_list<Method, Methods...>>
 		{
-			constexpr static bool is_valid = Method::template __frag_cond__<T>;
+			constexpr static bool is_valid = Method::template _frag_cond_<T>;
 			using new_list = std::conditional_t<is_valid, type_list<Valid..., Method>, type_list<Valid...>>;
 			using method_list = typename valid_method_frag<T, new_list, type_list<Methods...>>::method_list;
 		};
@@ -293,6 +292,7 @@ friend typename methods::template get<(n)*16+15>;\
             template <typename U>
             U& as() { return *static_cast<U*>(this); }
 		private:
+
 			using methods = TestInherit::method_list;
 			_COMBINATIVE_MAKE_FRIENDS_128(0);
 
@@ -336,9 +336,9 @@ friend typename methods::template get<(n)*16+15>;\
             template <typename T>
             T& as() { return *static_cast<T*>(this); }
 
-        protected:
-		private:
-			using methods = InheritImpl::method_list;
+        private:
+
+            using methods = InheritImpl::method_list;
 			_COMBINATIVE_MAKE_FRIENDS_128(0);
 
 			template <typename... V>
@@ -598,9 +598,9 @@ friend typename methods::template get<(n)*16+15>;\
 			template<typename Self, typename... T>
 			static constexpr bool transform<Self, exclude_impl<T...>> = (!std::is_base_of_v<T, Self> && ...);
 			template<typename Self, typename... T>
-			static constexpr bool transform<Self, depends_on_any_impl<T...>> = (T::template __frag_cond__<Self> || ...);
+			static constexpr bool transform<Self, depends_on_any_impl<T...>> = (T::template _frag_cond_<Self> || ...);
 			template<typename Self, typename... T>
-			static constexpr bool transform<Self, depends_on_all_impl<T...>> = (T::template __frag_cond__<Self> && ...);
+			static constexpr bool transform<Self, depends_on_all_impl<T...>> = (T::template _frag_cond_<Self> && ...);
 			template<typename Self, typename Lambda>
 			static constexpr bool transform<Self, custom_cond_impl<Lambda>> = true;
 			template<typename Self, typename Tag>
@@ -653,9 +653,9 @@ friend typename methods::template get<(n)*16+15>;\
 		template<typename... T, typename... Tag>
 		class MSC_EBO impl_for<type_list<T...>, type_list<Tag...>>
 		{
-			template <typename Self> static constexpr bool __frag_cond__ = (impl_for_helper::transform<Self, T> && ...);
+			template <typename Self> static constexpr bool _frag_cond_ = (impl_for_helper::transform<Self, T> && ...);
 
-			template <typename Self> using __cond__ = std::bool_constant<(impl_for_helper::custom_cond_tmp<Self, T> && ...)>;
+			template <typename Self> using _custom_cond_ = std::bool_constant<(impl_for_helper::custom_cond_tmp<Self, T> && ...)>;
 
 			template <typename T, typename ValidList, typename Unverified>
 			friend struct valid_method;
