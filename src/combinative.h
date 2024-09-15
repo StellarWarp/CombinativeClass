@@ -394,7 +394,7 @@ friend typename methods::template get<(n)*16+15>;\
 		{
 			template<typename Info>
 			using cast_ident = Info::ident;
-			using type = type_list<Infos...>::cast<cast_ident>;
+			using type = type_list<Infos...>::template cast<cast_ident>;
 		};
 
 		template<typename List, int I, typename New>
@@ -657,9 +657,9 @@ friend typename methods::template get<(n)*16+15>;\
 
 			template <typename Self> using _custom_cond_ = std::bool_constant<(impl_for_helper::custom_cond_tmp<Self, T> && ...)>;
 
-			template <typename T, typename ValidList, typename Unverified>
+			template <typename , typename , typename >
 			friend struct valid_method;
-			template <typename T, typename ValidList, typename Unverified>
+			template <typename , typename , typename >
 			friend struct valid_method_frag;
 
 			template<typename U>

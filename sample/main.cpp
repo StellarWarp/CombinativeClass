@@ -1,5 +1,9 @@
 ﻿
 #include "sample_type_info.h"
+namespace quick_sample
+{
+#include "quick_sample.h"
+}
 #include "../src/combinative.h"
 #include <iostream>
 
@@ -102,8 +106,8 @@ namespace sample
 		}
 		auto TemplateCast_CD(this auto&& self)
 		{
-			auto& x = self.as<FragmentC>().c; //note that this is unfriendly to lsp
-			auto& y = self.as<FragmentD>().c;
+			auto& x = self.template as<FragmentC>().c; //note that this is unfriendly to lsp
+			auto& y = self.template as<FragmentD>().c;
 			return x + y;
 		}
 	};
