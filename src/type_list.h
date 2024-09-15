@@ -22,14 +22,14 @@ namespace combinative::detail
 		};
 		template <size_t I, typename U, typename... Us>
 		struct get_helper<I, U, Us...> {
-			using type = typename get_helper<I - 1, Us...>::type;
+			using type = get_helper<I - 1, Us...>::type;
 		};
 
 	public:
-		template <size_t I> using get = typename get_helper<I, T...>::type;
+		template <size_t I> using get = get_helper<I, T...>::type;
 
 		using remove_ref = type_list<std::remove_reference_t<T>...>;
-		using decay_type = typename type_list<std::decay_t<T>...>;
+		using decay_type = type_list<std::decay_t<T>...>;
 
 	private:
 		template <typename U>
@@ -95,7 +95,7 @@ namespace combinative::detail
 		};
 		template <typename... T1s, typename T2, typename... T2s>
 		struct pop_back_helper<type_list<T1s...>, type_list<T2, T2s...>> {
-			using type = typename
+			using type =
 				pop_back_helper<type_list<T1s..., T2>, type_list<T2s...>>::type;
 		};
 
@@ -111,7 +111,7 @@ namespace combinative::detail
 			using type = type_list<T1..., T2...>;
 		};
 		template <typename L, typename... Ls> struct cat_helper<L, Ls...> {
-			using type = typename cat_helper<L, typename cat_helper<Ls...>::type>::type;
+			using type = cat_helper<L, typename cat_helper<Ls...>::type>::type;
 		};
 
 		template <typename L1, typename L2, size_t Remove> struct remove_helper;
@@ -126,7 +126,7 @@ namespace combinative::detail
 		};
 		template <typename... T1s, typename T2, typename... T2s, size_t Remove>
 		struct remove_helper<type_list<T1s...>, type_list<T2, T2s...>, Remove> {
-			using type = typename remove_helper<type_list<T1s..., T2>, type_list<T2s...>, Remove - 1>::type;
+			using type = remove_helper<type_list<T1s..., T2>, type_list<T2s...>, Remove - 1>::type;
 		};
 
 
@@ -147,20 +147,20 @@ namespace combinative::detail
 
 	public:
 		template <typename... List>
-		using cat = typename cat_helper<type_list<T...>, List...>::type;
+		using cat = cat_helper<type_list<T...>, List...>::type;
 
-		using pop_front = typename pop_front_helper<T...>::type;
+		using pop_front = pop_front_helper<T...>::type;
 
-		using pop_back = typename pop_back_helper<type_list<>, type_list<T...>>::type;
+		using pop_back = pop_back_helper<type_list<>, type_list<T...>>::type;
 
 		template <typename... U> using push_back = type_list<T..., U...>;
 
 		template <typename... U> using push_front = type_list<U..., T...>;
 
 		template <size_t I>
-		using remove = typename remove_helper<type_list<>, type_list<T...>, I>::type;
+		using remove = remove_helper<type_list<>, type_list<T...>, I>::type;
 		template <typename... U>
-		using erase = typename t_remove_helper<type_list<T...>, type_list<>, type_list<U...>>::type;
+		using erase = t_remove_helper<type_list<T...>, type_list<>, type_list<U...>>::type;
 
 
 	private:
@@ -171,7 +171,7 @@ namespace combinative::detail
 
 	public:
 		template <typename... Tuple>
-		using from_tuple = typename cat_helper<
+		using from_tuple = cat_helper<
 			typename from_tuple_helper<std::remove_cvref_t<Tuple>>::type...
 		>::type;
 
@@ -202,19 +202,19 @@ namespace combinative::detail
 			type_list<type_list<T1s...>, type_list<T2, T2s...>>> {
 			using filtered = type_list<T1s...>;
 			using unfiltered = type_list<T2, T2s...>;
-			using f = typename filter_helper_branch<Condition<T2>::value == TargetCondition,
+			using f = filter_helper_branch<Condition<T2>::value == TargetCondition,
 				filtered, unfiltered>::type;
-			using type = typename filter_helper<Condition, TargetCondition, f>::type;
+			using type = filter_helper<Condition, TargetCondition, f>::type;
 		};
 
 	public:
 
 		template <template <typename> typename Condition>
-		using filter_with = typename
+		using filter_with =
 			filter_helper<Condition, true,
 			type_list<type_list<>, type_list<T...>>>::type;
 		template <template <typename> typename Condition>
-		using filter_without = typename
+		using filter_without =
 			filter_helper<Condition, false,
 			type_list<type_list<>, type_list<T...>>>::type;
 
@@ -235,7 +235,7 @@ namespace combinative::detail
 		};
 
 	public:
-		using unique = typename unique_helper<T...>::type;
+		using unique = unique_helper<T...>::type;
 
 	private:
 		template <typename Target, int I, typename...> struct index_of_helper;
