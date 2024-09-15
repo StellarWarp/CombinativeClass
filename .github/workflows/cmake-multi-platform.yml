@@ -27,16 +27,11 @@ jobs:
         build_type: [Release]
         cpp_compiler: [gcc-12, clang++-15, cl]
         std: [23]
-#        include:
-#          - os: windows-latest
-#            cpp_compiler: cl
-#          - os: ubuntu-latest
-#            cpp_compiler: gcc-12
-#          - os: ubuntu-latest
-#            cpp_compiler: clang-16
         exclude:
           - os: windows-latest
             cpp_compiler: gcc-12
+          - os: windows-latest
+            cpp_compiler: clang-15
           - os: ubuntu-latest
             cpp_compiler: cl
 

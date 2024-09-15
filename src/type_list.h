@@ -141,7 +141,7 @@ namespace combinative::detail
 		struct t_remove_helper<type_list<U, Unsolve...>, type_list<Solved...>, type_list<Remove...>> {
 			static constexpr bool filtered = type_list<Remove...>::template contains<U>;
 			using new_solve_list = std::conditional_t<filtered, type_list<Solved...>, type_list<Solved..., U>>;
-			using type = t_remove_helper<type_list<Unsolve...>, new_solve_list, type_list<Remove...>>::type;
+			using type = typename t_remove_helper<type_list<Unsolve...>, new_solve_list, type_list<Remove...>>::type;
 		};
 
 
