@@ -1,4 +1,5 @@
-<a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/cmake-multi-platform.yml" target="_blank">![Multi-Platform](https://github.com/StellarWarp/CombinativeClass/actions/workflows/cmake-multi-platform.yml/badge.svg)</a>
+<a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/msvc" target="_blank">![Multi-Platform](https://github.com/StellarWarp/CombinativeClass/actions/workflows/msvc/badge.svg)</a>
+<a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/clang-cl" target="_blank">![Multi-Platform](https://github.com/StellarWarp/CombinativeClass/actions/workflows/clang-cl/badge.svg)</a>
 
 # Combinative Class
 
