@@ -293,7 +293,7 @@ friend typename methods::template get<(n)*16+15>;\
             U& as() { return *static_cast<U*>(this); }
 		private:
 
-			using methods = TestInherit::method_list;
+			using methods =typename TestInherit::method_list;
 			_COMBINATIVE_MAKE_FRIENDS_128(0);
 
 			template <typename... V>
