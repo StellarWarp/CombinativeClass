@@ -1,6 +1,8 @@
 # Combinative Class
 
-The Combinative Class is a tiny tool that leverages C++23 features to provide an improved Curiously Recurring Template Pattern (CRTP) based implementation. This utility enables the combination of data and the implementation of methods based on these combinations, offering a clean and powerful approach to multiple inheritance without relying on virtual bases.
+'combinative' is a header-only library that provides an improved Curiously Recurring Template Pattern (CRTP) for C++23.
+
+This utility enables the combination of data and the implementation of methods based on these combinations, offering a clean and powerful approach to multiple inheritance without relying on virtual bases.
 
 ## Quick Sample
 
@@ -156,7 +158,7 @@ those issues are making it hard to maintain
 
 the solution see `sample_type_info.h`. both CRTP implementation and Combinative Class implementation are provided
 
-## Feature
+## Features
 
 The Combinative Class basically an extension of CRTP with following feature
 - combination :
@@ -413,3 +415,29 @@ int main()
 ```
 
 a more realistic sample is provide in `sample_type_info.h`
+
+## Polymorphism
+
+The parent class and subclass of the Combinative Class do not have any inheritance relationship, which means they cannot be converted to each other. eg. `ObjectABC` is not convertable to `ObjectAC`. 
+
+The polymorphism of Combinative Class is obtained via  *[Duck Typing](https://en.wikipedia.org/wiki/Duck_typing)*.
+
+For **compile-time** polymorphism. Passing Combinative Class as a templated argument.
+
+```cpp
+auto operator<=>(
+	std::derived_from<CompareTag> auto& a,
+	std::derived_from<CompareTag> auto& b)
+{
+	return a.Comparable() <=> b.Comparable();
+}
+```
+
+For **runtime** polymorphism. Type-erasure is required.
+
+following lib can be used to implement the runtime type-erasure.
+
+* [boost.ext.TE](https://github.com/boost-ext/te)
+* [Boost.TypeErasure](https://www.boost.org/doc/libs/1_66_0/doc/html/boost_typeerasure.html)
+* [Folly.Poly](https://github.com/facebook/folly/blob/master/folly/docs/Poly.md)
+* [Proxy](https://github.com/microsoft/proxy)
