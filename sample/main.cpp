@@ -67,7 +67,6 @@ namespace sample
 			return fa.a + fb.b + fc.c;
 		}
 
-
 		auto FragmentCopy_ABC(this access_list self)
 		{
 			auto [fa, fb, fc] = self.val();
@@ -103,7 +102,7 @@ namespace sample
 		}
 		auto TemplateCast_CD(this auto&& self)
 		{
-			auto& x = self.as<FragmentC>().c; // this is unfriendly to properties tipping
+			auto& x = self.as<FragmentC>().c; //note that this is unfriendly to lsp
 			auto& y = self.as<FragmentD>().c;
 			return x + y;
 		}
@@ -121,7 +120,7 @@ namespace sample
 	struct CustomCondition : impl_for<>
 	{
 		template <typename Self>
-		using __cond__ = std::bool_constant<requires{ &Self::Setter_ABC; }>;
+		using _custom_cond_ = std::bool_constant<requires{ &Self::Setter_ABC; }>;
 		auto ABC_SetDefault(this auto&& self) { return self.Setter_ABC(0, 0, 0); }
 	};
 #endif

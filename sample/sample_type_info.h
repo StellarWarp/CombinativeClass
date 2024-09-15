@@ -193,14 +193,14 @@ namespace generic
 		struct type_copy_constructor : impl_for<>
 		{
 			template <typename T>
-			using __cond__ = std::bool_constant < requires(T t) { t.copy_constructor_ptr(); } > ;
+			using _custom_cond_ = std::bool_constant < requires(T t) { t.copy_constructor_ptr(); } > ;
 			void* copy_constructor(this auto&& self, void* dest, const void* src) { return self.copy_constructor_ptr()(dest, src); }
 			bool is_copy_constructible(this auto&& self) { return self.copy_constructor_ptr() != nullptr; }
 		};
 		struct type_move_constructor : impl_for<>
 		{
 			template <typename T>
-			using __cond__ = std::bool_constant < requires(T t) { t.move_constructor_ptr(); } > ;
+			using _custom_cond_ = std::bool_constant < requires(T t) { t.move_constructor_ptr(); } > ;
 			void* move_constructor(this auto&& self, void* dest, void* src) { return self.move_constructor_ptr()(dest, src); }
 			bool is_move_constructible(this auto&& self) { return self.move_constructor_ptr() != nullptr; }
 		};
@@ -208,7 +208,7 @@ namespace generic
 		struct type_destructor : impl_for<>
 		{
 			template <typename T>
-			using __cond__ = std::bool_constant < requires(T t) { t.destructor_ptr(); t.size(); } > ;
+			using _custom_cond_ = std::bool_constant < requires(T t) { t.destructor_ptr(); t.size(); } > ;
 			void destructor(this auto&& self, void* dest) {
 				if (self.destructor_ptr() == nullptr) return;
 				self.destructor_ptr()(dest);

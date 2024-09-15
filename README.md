@@ -4,19 +4,19 @@ The Combinative Class is a tiny tool that leverages C++23 features to provide an
 
 ## Quick Sample
 
-```c++
+```cpp
 #include "combinative.h"
 
 using namespace combinative;
 
-struct A{ int a; };
-struct B{ int b; };
-struct C{ int c; };
-struct D{ int d; };
+struct A{ int a{}; };
+struct B{ int b{}; };
+struct C{ int c{}; };
+struct D{ int d{}; };
 
 struct MethodA : impl_for<A>
 {
-    int FuncA(this auto&& self)
+    int FuncA(this auto&& self,...)
     {
         return self.a;
     }
@@ -24,7 +24,7 @@ struct MethodA : impl_for<A>
 
 struct MethodC : impl_for<C>
 {
-    int FuncC(this access_list self)
+    int FuncC(this access_list self,...)
     {
         return self.cref().c;//tip friendly
     }
@@ -32,7 +32,7 @@ struct MethodC : impl_for<C>
 
 struct MethodAB : impl_for<A,B>
 {
-    int FuncAB(this access_list self)
+    int FuncAB(this access_list self,...)
     {
         auto [fa,fb] = self.cref();
         return fa.a + fb.b;
@@ -41,6 +41,17 @@ struct MethodAB : impl_for<A,B>
 
 using MyFuncSet = function_set<MethodA, MethodC, MethodAB>;
 
+/****************************/
+/*                          */
+/*             A            */
+/*            / \           */
+/*           /   \          */
+/*          AB   AC         */
+/*           \   /          */
+/*            \ /           */
+/*            ABC           */
+/*                          */
+/****************************/
 struct ObjectA : combine<MyFuncSet, A>
 {
     ObjectA(int a_) { a = a_; }
@@ -238,7 +249,6 @@ namespace sample
 			return fa.a + fb.b + fc.c;
 		}
 
-
 		auto FragmentCopy_ABC(this access_list self)
 		{
 			auto [fa, fb, fc] = self.val();
@@ -274,7 +284,7 @@ namespace sample
 		}
 		auto TemplateCast_CD(this auto&& self)
 		{
-			auto& x = self.as<FragmentC>().c; // this is unfriendly to properties tipping
+			auto& x = self.as<FragmentC>().c; //note that this is unfriendly to lsp
 			auto& y = self.as<FragmentD>().c;
 			return x + y;
 		}
@@ -287,12 +297,12 @@ namespace sample
         auto ABC_SetDefault(this auto&& self) { return self.Setter_ABC(0,0,0); }
     };
 #else
-	// VS Intellisense has same problem with lambda with concept constraint
+	// VS Intellisense has same problem in lambda with concept constraint
 	// this is the alternative form for custom condition
 	struct CustomCondition : impl_for<>
 	{
 		template <typename Self>
-		using __cond__ = std::bool_constant<requires{ &Self::Setter_ABC; }>;
+		using _custom_cond_ = std::bool_constant<requires{ &Self::Setter_ABC; }>;
 		auto ABC_SetDefault(this auto&& self) { return self.Setter_ABC(0, 0, 0); }
 	};
 #endif

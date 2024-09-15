@@ -34,6 +34,17 @@ struct MethodAB : impl_for<A,B>
 
 using MyFuncSet = function_set<MethodA, MethodC, MethodAB>;
 
+/****************************/
+/*                          */
+/*             A            */
+/*            / \           */
+/*           /   \          */
+/*          AB   AC         */
+/*           \   /          */
+/*            \ /           */
+/*            ABC           */
+/*                          */
+/****************************/
 struct ObjectA : combine<MyFuncSet, A>
 {
     ObjectA(int a_) { a = a_; }
