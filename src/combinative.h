@@ -115,7 +115,7 @@ namespace combinative
 			type_list<Prot...>,
 			type_list<Priv...>>
 		{
-			using type = UnWarpControlSymbolsImpl<
+			using type = typename UnWarpControlSymbolsImpl<
 				type_list<Unsolve...>,
 				type_list<Pub...>,
 				type_list<Prot..., U>,
@@ -129,7 +129,7 @@ namespace combinative
 			type_list<Prot...>,
 			type_list<Priv...>>
 		{
-			using type = UnWarpControlSymbolsImpl<
+			using type = typename UnWarpControlSymbolsImpl<
 				type_list<Unsolve...>,
 				type_list<Pub...>,
 				type_list<Prot..., U>,
@@ -143,7 +143,7 @@ namespace combinative
 			type_list<Prot...>,
 			type_list<Priv...>>
 		{
-			using type = UnWarpControlSymbolsImpl<
+			using type = typename UnWarpControlSymbolsImpl<
 				type_list<Unsolve...>,
 				type_list<Pub..., U>,
 				type_list<Prot...>,
@@ -157,14 +157,14 @@ namespace combinative
 			type_list<Prot...>,
 			type_list<Priv...>>
 		{
-			using type = UnWarpControlSymbolsImpl<
+			using type = typename UnWarpControlSymbolsImpl<
 				type_list<Unsolve...>,
 				type_list<Pub...>,
 				type_list<Prot...>,
 				type_list<Priv..., U>>::type;
 		};
 		template<typename... T>
-		using UnWarpControlSymbols = UnWarpControlSymbolsImpl<
+		using UnWarpControlSymbols = typename UnWarpControlSymbolsImpl<
 			type_list<T...>, type_list<>, type_list<>, type_list<>>::type;
 
 		template<typename, typename, typename>

@@ -291,12 +291,12 @@ namespace combinative::detail
 		};
 		template <int I, typename V, typename... Left, typename U, typename... Right>
 		struct replace_helper<I, V, type_list<Left...>, type_list<U, Right...>> {
-			using type = replace_helper<I - 1, V, type_list<Left..., U>, type_list< Right...>>::type;
+			using type = typename replace_helper<I - 1, V, type_list<Left..., U>, type_list< Right...>>::type;
 		};
 
 	public:
 		template <int I, typename V>
-		using replace_at = replace_helper<I, V, type_list<>, type_list<T...>>::type;
+		using replace_at = typename replace_helper<I, V, type_list<>, type_list<T...>>::type;
 
 	};
 }
