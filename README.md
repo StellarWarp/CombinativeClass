@@ -1,8 +1,4 @@
 <a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/cmake-multi-platform.yml" target="_blank">![Multi-Platform](https://github.com/StellarWarp/CombinativeClass/actions/workflows/cmake-multi-platform.yml/badge.svg)</a>
-<a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/windows.yml" target="_blank">![Windows](https://github.com/StellarWarp/CombinativeClass/actions/workflows/windows.yml/badge.svg)</a>
-<a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/linux.yml" target="_blank">![Linux](https://github.com/StellarWarp/CombinativeClass/actions/workflows/linux.yml/badge.svg)</a>
-<a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/macos.yml" target="_blank">![Mac](https://github.com/StellarWarp/CombinativeClass/actions/workflows/macos.yml/badge.svg)</a>
-
 
 # Combinative Class
 
