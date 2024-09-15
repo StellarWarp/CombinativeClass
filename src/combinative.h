@@ -293,7 +293,7 @@ friend typename methods::template get<(n)*16+15>;\
             U& as() { return *static_cast<U*>(this); }
 		private:
 
-			using methods =typename TestInherit::method_list;
+			using methods = typename TestInherit::method_list;
 			_COMBINATIVE_MAKE_FRIENDS_128(0);
 
 			template <typename... V>
@@ -311,7 +311,7 @@ friend typename methods::template get<(n)*16+15>;\
 		template<typename... FunctionSet, typename... Methods>
 		struct UnwarpMethodsImpl<type_list<FunctionSet...>, type_list<Methods...>>
 		{
-			using method_list = type_list<Methods...>::template cat<typename FunctionSet::method_list...>;
+			using method_list = typename type_list<Methods...>::template cat<typename FunctionSet::method_list...>;
 		};
 
 		template<typename... FunctionSet>
