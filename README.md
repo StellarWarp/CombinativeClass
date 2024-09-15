@@ -1,3 +1,6 @@
+<a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/cmake-multi-platform.yml" target="_blank">![Multi-Platform](https://github.com/StellarWarp/CombinativeClass/actions/workflows/cmake-multi-platform.yml/badge.svg)</a>
+
+
 # Combinative Class
 
 'combinative' is a header-only library that provides an improved Curiously Recurring Template Pattern (CRTP) for C++23.
