@@ -334,9 +334,10 @@ namespace sample
 
 	using FuncSet2 = function_set<MethodsComp1, MethodsComp2, MethodsComp3>;
 
-	auto operator<=>(
-		std::derived_from<CompareTag> auto& a,
-		std::derived_from<CompareTag> auto& b)
+    template<typename T1, typename T2>
+    requires std::derived_from<std::decay_t<T1>, CompareTag> &&
+             std::derived_from<std::decay_t<T2>, CompareTag>
+	auto operator<=>(T1&& a, T2&& b)
 	{
 		return a.Comparable() <=> b.Comparable();
 	}
