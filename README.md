@@ -3,7 +3,7 @@
 
 # Combinative Class
 
-'combinative' is a header-only library that provides an improved Curiously Recurring Template Pattern (CRTP) for C++23.
+`combinative` is a header-only library that provides an improved Curiously Recurring Template Pattern (CRTP) for C++23.
 
 This utility enables the combination of data and the implementation of methods based on these combinations, offering a clean and powerful approach to multiple inheritance without relying on virtual bases.
 
