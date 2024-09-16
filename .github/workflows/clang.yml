@@ -26,15 +26,17 @@ jobs:
         os: [windows-latest]
         build_type: [Release]
         cpp_compiler: [clang]
+    env:
+      # ruleid: allowed-unsecure-commands
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Add clang path to $PATH env
+    - name: Add clang path to env
       shell: bash
       if: runner.os == 'Windows'
       run: |
-        export ACTIONS_ALLOW_UNSECURE_COMMANDS=true
         echo "::add-path::C:\msys64\mingw64\bin"
         clang --version
         cmake --version
