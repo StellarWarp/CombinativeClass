@@ -91,7 +91,7 @@ void quick_sample()
 };
 ```
 
-## Purpose
+## Motivation
 
 As the name suggest, it's for combining data and method to form different classes.
 
