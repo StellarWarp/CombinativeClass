@@ -1,6 +1,6 @@
 # This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
 # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
-name: clang
+name: MSVC
 
 on:
   push:
@@ -25,28 +25,12 @@ jobs:
       matrix:
         os: [windows-latest]
         build_type: [Release]
-    env:
-      # ruleid: allowed-unsecure-commands
-      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+        c_compiler: [gcc]
+        cpp_compiler: [g++]
+
 
     steps:
     - uses: actions/checkout@v4
-
-    - name: Setup Ninja
-      uses: ashutoshvarma/setup-ninja@master
-      with:
-        # ninja version to download. Default: 1.10.0
-        version: 1.10.0
-
-    - name: Setup Clang
-      shell: bash
-      if: runner.os == 'Windows'
-      run: |
-        echo "::add-path::C:\msys64\mingw64\bin"
-        set CC=clang
-        set CXX=clang++
-        clang --version
-        cmake --version
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -60,10 +44,9 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -G Ninja
-        -D CMAKE_C_COMPILER=clang
-        -D CMAKE_CXX_COMPILER=clang++
-        -D CMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -S ${{ github.workspace }}
 
     - name: Build

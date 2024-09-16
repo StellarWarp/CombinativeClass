@@ -1,6 +1,7 @@
 <a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/msvc.yml" target="_blank">![msvc](https://github.com/StellarWarp/CombinativeClass/actions/workflows/msvc.yml/badge.svg)</a>
 <a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/clang-cl.yml" target="_blank">![clang_cl](https://github.com/StellarWarp/CombinativeClass/actions/workflows/clang-cl.yml/badge.svg)</a>
-<a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/clang.yml" target="_blank">![clang_cl](https://github.com/StellarWarp/CombinativeClass/actions/workflows/clang.yml/badge.svg)</a>
+<a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/clang.yml" target="_blank">![clang](https://github.com/StellarWarp/CombinativeClass/actions/workflows/clang.yml/badge.svg)</a>
+<a href="https://github.com/StellarWarp/CombinativeClass/actions/workflows/gcc.yml" target="_blank">![gcc](https://github.com/StellarWarp/CombinativeClass/actions/workflows/gcc.yml/badge.svg)</a>
 
 # Combinative Class
 
