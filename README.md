@@ -450,3 +450,12 @@ following lib can be used to implement the runtime type-erasure.
 * [Boost.TypeErasure](https://www.boost.org/doc/libs/1_66_0/doc/html/boost_typeerasure.html)
 * [Folly.Poly](https://github.com/facebook/folly/blob/master/folly/docs/Poly.md)
 * [Proxy](https://github.com/microsoft/proxy)
+
+
+## Compiler Compatibility
+
+Combinative Class is required to be supported by C++23 compiler.
+
+- MSVC: 19.4 and later
+- Clang: clang-18 and later
+- GCC: current not supported. need a workaround with the 'type_list' utility
