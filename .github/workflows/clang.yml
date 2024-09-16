@@ -1,6 +1,6 @@
 # This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
 # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
-name: clang-cl
+name: clang
 
 on:
   push:
@@ -34,8 +34,12 @@ jobs:
       shell: bash
       if: runner.os == 'Windows'
       run: |
-        echo "PATH=$PATH:C:\msys64\mingw64\bin" >> $GITHUB_ENV
+        {
+          echo "PATH=$PATH:C:\msys64\mingw64\bin"
+          echo "cmake"
+        } >> "$GITHUB_ENV"
         clang --version
+        cmake --version
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
