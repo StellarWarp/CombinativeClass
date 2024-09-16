@@ -17,7 +17,6 @@ using namespace combinative;
 struct A{ int a{}; };
 struct B{ int b{}; };
 struct C{ int c{}; };
-struct D{ int d{}; };
 
 struct MethodA : impl_for<A>
 {
@@ -187,6 +186,10 @@ The Combinative Class basically an extension of CRTP with following feature
 ```cpp
 ﻿
 #include "sample_type_info.h"
+namespace quick_sample
+{
+#include "quick_sample.h"
+}
 #include "../src/combinative.h"
 #include <iostream>
 
@@ -229,12 +232,14 @@ namespace sample
 
 	struct SingleFragmentAccess : impl_for<FragmentC>::exclude<FragmentA, FragmentB>
 	{
-		auto TemplateCast_C_noAB(this auto&& self) { return self.template as<FragmentC>().c; }
+		//access_list is adviced: refactoring friendly
 		auto EmbeddedCaster_C_noAB(this access_list self) { return self.cref().c; }
+		auto TemplateCast_C_noAB(this auto&& self) { return self.template as<FragmentC>().c; }
 	};
 
 	struct MultiFragmentAccess : impl_for<FragmentA, FragmentB, FragmentC>
 	{
+		//access_list is adviced: refactoring friendly
 		auto Setter_ABC(this access_list self, int32_t a, int32_t b, int32_t c)
 		{
 			auto [fa, fb, fc] = self.ref();
@@ -289,8 +294,8 @@ namespace sample
 		}
 		auto TemplateCast_CD(this auto&& self)
 		{
-			auto& x = self.as<FragmentC>().c; //note that this is unfriendly to lsp
-			auto& y = self.as<FragmentD>().c;
+			auto& x = self.template as<FragmentC>().c; //note that this is unfriendly to lsp
+			auto& y = self.template as<FragmentD>().c;
 			return x + y;
 		}
 	};
@@ -302,7 +307,7 @@ namespace sample
         auto ABC_SetDefault(this auto&& self) { return self.Setter_ABC(0,0,0); }
     };
 #else
-	// VS Intellisense has same problem in lambda with concept constraint
+	// VS Intellisense has some problem in lambda with concept constraint
 	// this is the alternative form for custom condition
 	struct CustomCondition : impl_for<>
 	{
@@ -392,12 +397,12 @@ int main()
 
 	ObjectABC o3;
 	o3.Setter_ABC(1, 2, 3);
-    o3.ABC_SetDefault();
+	o3.ABC_SetDefault();
 	o3.Auto_AC();
 	o3.Auto_BC();
 	o3.Auto_ABC();
 	o3.EmbeddedTupleCaster_ABC(); // intellisense has some problem in tipping this, ok with clangd
-    o3.EmbeddedTupleCasterCustomAccess_ABC();
+	o3.EmbeddedTupleCasterCustomAccess_ABC();
 	o3.FragmentCopy_ABC();
 
 	ObjectCD o4;
