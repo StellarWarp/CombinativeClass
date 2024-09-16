@@ -25,7 +25,7 @@ jobs:
       matrix:
         os: [windows-latest]
         build_type: [Release]
-        cpp_compiler: [clang]
+        cpp_compiler: [clang++]
     env:
       # ruleid: allowed-unsecure-commands
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
