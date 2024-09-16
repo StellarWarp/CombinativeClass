@@ -34,6 +34,7 @@ jobs:
       shell: bash
       if: runner.os == 'Windows'
       run: |
+        setx ACTIONS_ALLOW_UNSECURE_COMMANDS "true" /M
         echo "::add-path::C:\msys64\mingw64\bin"
         clang --version
         cmake --version
