@@ -34,10 +34,7 @@ jobs:
       shell: bash
       if: runner.os == 'Windows'
       run: |
-        {
-          echo "PATH=$PATH:C:\msys64\mingw64\bin"
-          echo "cmake"
-        } >> "$GITHUB_ENV"
+        echo "PATH=$PATH:C:\msys64\mingw64\bin" >> "$GITHUB_ENV"
         clang --version
         cmake --version
 
