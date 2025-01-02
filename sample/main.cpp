@@ -201,7 +201,6 @@ using namespace sample;
 
 int main()
 {
-
 	ObjectAB o1;
 	o1.a = 1;
 	o1.Auto_AB_noC();
